@@ -17,10 +17,11 @@ pluginManagement {
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }
 }
-// 这个 dependencyResolutionManagement 为 Android 端的写法，改写法用于统一所有模块依赖
+// 这个 dependencyResolutionManagement 为 Android 端的写法，该写法用于统一所有模块依赖
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
   repositories {
+    // ...
     // mavenCentral 快照仓库
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }
@@ -37,8 +38,9 @@ repositories {
 ```
 
 ### 启动模块
-如果你是 Kotlin/Jvm 项目，在启动模块一般是 `main` 函数所在模块，
+如果你是 Kotlin/Jvm 项目，启动模块一般是 `main` 函数所在模块，
 如果是 Android 项目，启动模式是引入了 `com.android.application` 插件的模块   
+可查看 [sample](sample) 使用示例
 #### build.gradle.kts
 ```kotlin
 plugins {
@@ -59,7 +61,7 @@ dependencies {
 
 ktProvider {
   packageName {
-    // 设置 packageName，则会自动寻找该 package 以及所以子包下的类
+    // 设置 packageName，则会自动寻找该 package 以及所有子包下的类
     include("com.g985892345.test") // 可设置多个 packageName
   }
 }
@@ -117,11 +119,11 @@ class TestServiceImpl : ITestService {
   }
 }
 ```
-| 注解                 | 作用            |                                           |
-|--------------------|---------------|-------------------------------------------|
-| NewImplProvider    | 每次获取都是新的实例    |                                           |
-| SingleImplProvider | 每次获取都是单例      | 依靠 kt 的 lazy 实现，线程安全                      |
-| KClassProvider     | 获取实现类的 KClass | 封装一下就可用于获取 Android 中的Class\<out Activity> |
+| 注解                 | 作用            |                                            |
+|--------------------|---------------|--------------------------------------------|
+| NewImplProvider    | 每次获取都是新的实例    |                                            |
+| SingleImplProvider | 每次获取都是单例      | 依靠 kt 的 lazy 实现，线程安全                       |
+| KClassProvider     | 获取实现类的 KClass | 封装一下就可用于获取 Android 中的 Class\<out Activity> |
 
 
 
@@ -171,7 +173,7 @@ object KtProvider : ProviderInitialize() {
 ```
 
 ## 自定义封装
-我只设计了服务提供框架的底层支持，你可以实现自己 ProviderManager 来扩展其他功能  
+我只设计了服务提供框架的底层支持，你可以实现自己的 ProviderManager 来扩展其他功能  
 
 `io.github.985892345.KtProvider` 的 gradle 插件只跟 `provider-init`、`provider-annotation` 挂钩，
 你可以不依赖 `provider-manager`，实现自己的 ProviderManager，具体实现逻辑请看源码

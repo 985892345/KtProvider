@@ -8,14 +8,20 @@ import com.g985892345.provider.init.wrapper.SingleImplProviderWrapper
 import kotlin.reflect.KClass
 
 /**
- * .
+ * 服务管理者
+ * - 你可以实现自己的服务管理者，该类只是简单实现
  *
  * @author 985892345
  * 2023/6/13 22:05
  */
 object ProviderManager {
-  fun getWrapperOrNull(name: String): IProviderWrapper? {
-    return ProviderInitialize.ProviderMap[name]
+  /**
+   * 获取 key 对应的 [IProviderWrapper]
+   *
+   * 如果你想实现自己的服务提供者，可以参考该实现
+   */
+  fun getWrapperOrNull(key: String): IProviderWrapper? {
+    return ProviderInitialize.ProviderMap[key]
   }
 }
 
