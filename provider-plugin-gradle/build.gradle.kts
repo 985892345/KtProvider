@@ -47,7 +47,7 @@ publishing {
     repositories {
       maven {
         // https://s01.oss.sonatype.org/
-        name = "mavenCentral" // 点击 publishReleasePublicationToMavenCentralRepository 发布到 mavenCentral
+        name = "mavenCentral"
         val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
         val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
         val isSnapshot = version.toString().endsWith("SNAPSHOT")

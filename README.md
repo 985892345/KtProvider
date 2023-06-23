@@ -53,10 +53,10 @@ dependencies {
   // 如果你是 KMM 项目
   implementation("io.github.985892345:provider-init:$krProviderVersion")
   
-  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目）
+  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
   implementation("io.github.985892345:provider-init-jvm:$krProviderVersion")
   
-  // 当然也有 -js 和 -native
+  // 当然也有 -js 和 -native（但未经过测试）
 }
 
 ktProvider {
@@ -94,7 +94,7 @@ interface ITestService {
 ```
 
 ### 实现模块
-实现依赖 api 模块，启动模块需要间接或直接依赖实现模块（使用 runtimeOnly 无效）
+实现模块依赖 api 模块，启动模块需要间接或直接依赖实现模块（使用 runtimeOnly 会导致不参与编译而无效）
 #### build.gradle.kts
 ```kotlin
 // 引入 provider-annotation 依赖
@@ -103,10 +103,10 @@ dependencies {
   // 如果你是 KMM 项目
   implementation("io.github.985892345:provider-annotation:$krProviderVersion")
   
-  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目）
+  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
   implementation("io.github.985892345:provider-annotation-jvm:$krProviderVersion")
   
-  // 当然也有 -js 和 -native
+  // 当然也有 -js 和 -native（但未经过测试）
 }
 ```
 #### 代码中
@@ -131,16 +131,16 @@ class TestServiceImpl : ITestService {
 #### build.gradle.kts
 ```kotlin
 // 引入 provider-manager 依赖
-// 该依赖并不是必选项，你可以实现自己服务管理者
+// 该依赖并不是必选项，你可以实现自己的服务管理者
 dependencies {
   val krProviderVersion = "x.y.z"
   // 如果你是 KMM 项目
   implementation("io.github.985892345:provider-manager:$krProviderVersion")
   
-  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目）
+  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
   implementation("io.github.985892345:provider-manager-jvm:$krProviderVersion")
   
-  // 当然也有 -js 和 -native
+  // 当然也有 -js 和 -native（但未经过测试）
 }
 ```
 #### 代码中
@@ -163,10 +163,11 @@ object KtProvider : ProviderInitialize() {
     // ... 后面是你重写的内容
   }
   
+  // 该方法由 ir 添加
   private fun _initImpl() {
-    addKClassProvider("name1") { TestClass1::class }
-    addNewImplProvider("name2") { TestClass2() }
-    addSingleImplProvider("name3") { TestClass3() }
+    addKClassProvider("key1") { TestClass1::class }
+    addNewImplProvider("key2") { TestClass2() }
+    addSingleImplProvider("key3") { TestClass3() }
     // ...
   }
 }
@@ -177,3 +178,20 @@ object KtProvider : ProviderInitialize() {
 
 `io.github.985892345.KtProvider` 的 gradle 插件只跟 `provider-init`、`provider-annotation` 挂钩，
 你可以不依赖 `provider-manager`，实现自己的 ProviderManager，具体实现逻辑请看源码
+
+## License
+```
+Copyright 2023 985892345
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

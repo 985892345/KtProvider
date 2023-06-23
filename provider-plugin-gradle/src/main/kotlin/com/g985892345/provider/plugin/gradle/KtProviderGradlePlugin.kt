@@ -25,19 +25,7 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
     val project = kotlinCompilation.target.project
     val ktProviderExtensions = project.extensions.getByType(KtProviderExtensions::class.java)
     val nameMatcher = ktProviderExtensions.packageNameManager.nameMatcher
-    val name = if (nameMatcher.isEmpty()) {
-      // 如果为空，则默认以启动模块 java 包下两级包名作为类全称前缀
-      // project.projectDir
-      //   .resolve("src")
-      //   .resolve("main")
-      //   .resolve("java")
-      //   .walk()
-      //   .maxDepth(2)
-      //   .map {
-      //     "${it.parentFile.name}.${it.name}"
-      //   }.joinToString("&")
-      ""
-    } else nameMatcher.joinToString("&")
+    val name = if (nameMatcher.isEmpty()) "" else nameMatcher.joinToString("&")
     return project.provider {
       listOf(
         SubpluginOption("package", name)
