@@ -2,6 +2,7 @@ package com.g985892345.provider.plugin.kcp.ir.body
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.builders.*
@@ -21,7 +22,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.overrides
 import org.jetbrains.kotlin.ir.util.setDeclarationsParent
-import org.jetbrains.kotlin.ir.util.superClass
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
@@ -42,16 +42,17 @@ class KClassProviderHandler : ProviderHandler {
   override fun init(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
-    providerInitializerClass: IrClass,
+    ktProviderInitializer: IrClassSymbol,
+    ktProviderInitializerImpl: IrClass,
     messageCollector: MessageCollector
   ) {
     this.messageCollector = messageCollector
-    val superClassFunction = providerInitializerClass.superClass!!
+    val superClassFunction = ktProviderInitializer.owner
       .functions
       .single {
         it.name.asString() == "addKClassProvider"
       }
-    addKClassProviderFunction = providerInitializerClass.functions
+    addKClassProviderFunction = ktProviderInitializerImpl.functions
       .single {
         it.overrides(superClassFunction)
       }
@@ -68,16 +69,18 @@ class KClassProviderHandler : ProviderHandler {
         .filter { it.fqName == kClassProviderAnnotation }
         .forEach {
           val name = it.allValueArguments[nameArg]?.value as String?
-          val key = getKey(name)
-          ProviderHandler.checkUniqueKey(key) {
+          val key = getKey(descriptor, name)
+          ProviderHandler.putAndCheckUniqueKey(key) {
             val nameArgMsg = if (name != null) "name = $name" else ""
             "已包含重复的申明: $nameArgMsg"
           }
+          messageCollector.report(
+            CompilerMessageSeverity.LOGGING,
+            "@KClassProvider: ${descriptor.classId!!.asFqNameString()}"
+          )
           val classSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
           +irAddKClassProvider(pluginContext, key, classSymbol, initImplFunction)
         }
-    } else {
-      throw IllegalStateException("@KtProvider 只能使用在 class、interface、object 上")
     }
   }
   
@@ -120,7 +123,7 @@ class KClassProviderHandler : ProviderHandler {
     }
   }
   
-  private fun getKey(name: String?): String {
-    return name ?: throw IllegalArgumentException("必须设置 name!")
+  private fun getKey(descriptor: ClassDescriptor, name: String?): String {
+    return name ?: throw IllegalArgumentException("必须设置 name!   class=${descriptor.classId!!.asFqNameString()}")
   }
 }

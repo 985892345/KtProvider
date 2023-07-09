@@ -18,7 +18,7 @@ import kotlin.reflect.KClass
 @Repeatable
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class NewImplProvider(val clazz: KClass<*> = Any::class, val name: String = "")
+annotation class NewImplProvider(val clazz: KClass<*> = Nothing::class, val name: String = "")
 
 /**
  * 每次获取都是单例
@@ -30,7 +30,7 @@ annotation class NewImplProvider(val clazz: KClass<*> = Any::class, val name: St
 @Repeatable
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class SingleImplProvider(val clazz: KClass<*> = Any::class, val name: String = "")
+annotation class SingleImplProvider(val clazz: KClass<*> = Nothing::class, val name: String = "")
 
 /**
  * 获取实现类的 KClass

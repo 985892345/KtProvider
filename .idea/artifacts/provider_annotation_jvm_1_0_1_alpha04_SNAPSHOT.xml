@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="provider-annotation-jvm-1.0.1-alpha04-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/provider-annotation/build/libs</output-path>
+    <root id="archive" name="provider-annotation-jvm-1.0.1-alpha04-SNAPSHOT.jar">
+      <element id="module-output" name="KtProvider.provider-annotation.jvmMain" />
+    </root>
+  </artifact>
+</component>

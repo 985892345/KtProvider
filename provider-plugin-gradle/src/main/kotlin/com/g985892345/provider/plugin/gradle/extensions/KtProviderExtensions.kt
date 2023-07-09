@@ -16,18 +16,13 @@ abstract class KtProviderExtensions(private val project: Project) {
   
   /**
    * 设置包名
-   * - *: 匹配任意长度字符，但不含包名分隔符
-   * - **: 匹配任意长度字符，包含包名分隔符
    * ```kotlin
    * ktProvider {
    *     packageName {
-   *         include("a.b")    // 匹配 a.b 下面的所有包和类
+   *         include("a.b")    // 匹配 a.b 下面的所有包及子包中的类
    *     }
    * }
    * ```
-   *
-   * ## 注：
-   * include 与 exclude 的调用先后顺序不具有交换律，可以根据先后顺序的不同得出不同的结果
    */
   fun packageName(packageName: Action<PackageNameManager>) {
     packageName.execute(packageNameManager)

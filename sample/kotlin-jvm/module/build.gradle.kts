@@ -1,6 +1,6 @@
 plugins {
   kotlin("jvm")
-  id("io.github.985892345.KtProvider") version "1.0.0-SNAPSHOT" // 测试时记得改这里的版本号
+  id("io.github.985892345.KtProvider") version "1.0.1-alpha09-SNAPSHOT" // 测试时记得改这里的版本号
 }
 
 group = "org.example"
@@ -10,13 +10,14 @@ dependencies {
   testImplementation(platform("org.junit:junit-bom:5.9.1"))
   testImplementation("org.junit.jupiter:junit-jupiter")
   
+  implementation(kotlin("reflect"))
+  
   implementation(rootProject.project("sample:kotlin-jvm:api"))
   implementation(rootProject.project("sample:kotlin-jvm:impl"))
   
   val version = properties["VERSION"].toString()
   implementation("io.github.985892345:provider-init-jvm:$version")
   implementation("io.github.985892345:provider-manager-jvm:$version")
-  implementation(kotlin("reflect"))
 }
 
 tasks.test {

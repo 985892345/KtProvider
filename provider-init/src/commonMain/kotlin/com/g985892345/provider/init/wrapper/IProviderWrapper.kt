@@ -6,7 +6,7 @@ package com.g985892345.provider.init.wrapper
  * @author 985892345
  * 2023/6/14 11:41
  */
-interface IProviderWrapper {
+sealed interface IProviderWrapper {
   fun get(): Any
 }
 

@@ -2,6 +2,7 @@ package com.g985892345.provider.plugin.kcp.ir.body
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -41,16 +42,17 @@ class SingleImplProviderHandler : ProviderHandler {
   override fun init(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
-    providerInitializerClass: IrClass,
+    ktProviderInitializer: IrClassSymbol,
+    ktProviderInitializerImpl: IrClass,
     messageCollector: MessageCollector
   ) {
     this.messageCollector = messageCollector
-    val superClassFunction = providerInitializerClass.superClass!!
+    val superClassFunction = ktProviderInitializer.owner
       .functions
       .single {
         it.name.asString() == "addSingleImplProvider"
       }
-    singleImplProviderFunction = providerInitializerClass.functions
+    singleImplProviderFunction = ktProviderInitializerImpl.functions
       .single {
         it.overrides(superClassFunction)
       }
@@ -72,17 +74,19 @@ class SingleImplProviderHandler : ProviderHandler {
           }
           val kClass = it.allValueArguments[clazzArg]?.value as KClassValue.Value.NormalClass?
           val name = it.allValueArguments[nameArg]?.value as String?
-          val key = getKey(kClass?.classId, name)
-          ProviderHandler.checkUniqueKey(key) {
-            val classIdArgMsg = if (kClass != null) "classId = " + kClass.classId.asFqNameString() else ""
-            val nameArgMsg = if (name != null) "name = $name" else ""
-            "已包含重复的申明: $classIdArgMsg   $nameArgMsg"
+          val key = getKey(descriptor, kClass?.classId, name)
+          val classIdArgMsg = if (kClass != null) "classId = " + kClass.classId.asFqNameString() + "   " else ""
+          val nameArgMsg = if (name != null) "name = $name" else ""
+          ProviderHandler.putAndCheckUniqueKey(key) {
+            "已包含重复的申明: $classIdArgMsg$nameArgMsg"
           }
+          messageCollector.report(
+            CompilerMessageSeverity.LOGGING,
+            "@SingleImplProvider: ${descriptor.classId!!.asFqNameString()} -> $classIdArgMsg$nameArgMsg"
+          )
           val classSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
           +irAddSingleImplProvider(pluginContext, key, classSymbol, initImplFunction)
         }
-    } else {
-      throw IllegalStateException("@SingleImplProvider 只能使用在 class、object 上")
     }
   }
   
@@ -124,10 +128,10 @@ class SingleImplProviderHandler : ProviderHandler {
     }
   }
   
-  private fun getKey(classId: ClassId?, name: String?): String {
+  private fun getKey(descriptor: ClassDescriptor, classId: ClassId?, name: String?): String {
     return if (classId == null) {
       if (name.isNullOrEmpty()) {
-        throw IllegalArgumentException("必须设置 clazz 或者 name!")
+        throw IllegalArgumentException("必须设置 clazz 或者 name!   class=${descriptor.classId!!.asFqNameString()}")
       } else {
         name
       }

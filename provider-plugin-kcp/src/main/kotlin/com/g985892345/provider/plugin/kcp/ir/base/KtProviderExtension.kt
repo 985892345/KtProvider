@@ -16,14 +16,13 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
 /**
  * .
@@ -44,23 +43,28 @@ class KtProviderExtension(
   
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     var isFound = false
-    val providerInitializerSymbol = FqName("com.g985892345.provider.init.ProviderInitialize")
+    val ktProviderInitializerClassId =
+      ClassId(FqName("com.g985892345.provider.init"), FqName("KtProviderInitializer"), false)
+    val ktProviderInitializerSymbol = pluginContext.referenceClass(ktProviderInitializerClassId)!!
     moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
       override fun visitClass(declaration: IrClass): IrStatement {
-        val superClass = declaration.superClass
-        if (superClass != null) {
-          if (superClass.hasEqualFqName(providerInitializerSymbol)) {
-            if (isFound) throw IllegalStateException("存在多个 ProviderInitialize 的实现类")
+        if (declaration.isObject || declaration.isClass && (declaration.modality == Modality.OPEN || declaration.modality == Modality.FINAL)) {
+          if (declaration.isSubclassOf(ktProviderInitializerSymbol.owner)) {
+            if (isFound) throw IllegalStateException("存在多个 KtProviderInitializer 的实现类")
             isFound = true
-            handlers.forEach { it.init(moduleFragment, pluginContext, declaration, message) }
+            handlers.forEach { it.init(moduleFragment, pluginContext, ktProviderInitializerSymbol, declaration, message) }
             val initImplFunction = addInitImplFunction(pluginContext, declaration)
-            val superInitFunction = superClass.functions.single { it.name.asString() == "init" }
+            val superInitFunction =
+              ktProviderInitializerSymbol.owner.functions.single { it.name.asString() == "initKtProvider" }
             overrideInitFunction(pluginContext, declaration, superInitFunction, initImplFunction)
           }
         }
         return super.visitClass(declaration)
       }
     })
+    if (!isFound) {
+      throw RuntimeException("该模块未找到 KtProviderInitializer 的实现类，请检查 KtProvider 插件配置是否正确   module=${moduleFragment.name}")
+    }
   }
   
   private fun addInitImplFunction(
@@ -115,7 +119,7 @@ class KtProviderExtension(
   ) {
     val initFun = declaration.functions.single { it.overrides(superInitFunction) }
     if (initFun.isFakeOverride) {
-      // 如果没有重写 init 方法
+      // 如果没有重写 initKtProvider 方法
       declaration.declarations.remove(initFun)
       declaration.addFunction(
         initFun.name.asString(),
@@ -131,7 +135,7 @@ class KtProviderExtension(
         }
       }
     } else {
-      // 重写了 init 方法
+      // 重写了 initKtProvider 方法
       initFun.body = DeclarationIrBuilder(pluginContext, initFun.symbol).irBlockBody {
         +irCall(initImplFunction).also {
           it.dispatchReceiver = irGet(initFun.dispatchReceiverParameter!!)

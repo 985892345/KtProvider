@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 
 /**
  * .
@@ -19,7 +20,8 @@ sealed interface ProviderHandler {
   fun init(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
-    providerInitializerClass: IrClass,
+    ktProviderInitializer: IrClassSymbol,
+    ktProviderInitializerImpl: IrClass,
     messageCollector: MessageCollector
   )
   
@@ -32,9 +34,11 @@ sealed interface ProviderHandler {
   companion object {
     private val UniqueKey = hashSetOf<String>()
     
-    fun checkUniqueKey(key: String, msg: (() -> String)? = null) {
+    fun putAndCheckUniqueKey(key: String, msg: (() -> String)? = null) {
       if (UniqueKey.contains(key)) {
         throw IllegalArgumentException(msg?.invoke() ?: "已包含重复的 key")
+      } else {
+        UniqueKey.add(key)
       }
     }
   }

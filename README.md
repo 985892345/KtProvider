@@ -68,19 +68,21 @@ ktProvider {
 ```
 #### 代码中
 ```kotlin
-// 新建一个 kt 类并继承于 ProviderInitialize
-object KtProvider : ProviderInitialize()
+// 新建一个 kt 类并实现于 KtProviderInitializer
+// 支持传递，即你可以在基础模块中初步实现 KtProviderInitializer，
+// 但是启动模块仍然需要一个且只能有一个类(抽象类除外)间接或直接实现 KtProviderInitializer
+object KtProvider : KtProviderInitializer
 
 // 然后在启动函数中进行加载
 fun main() {
-  KtProvider.init()
+  KtProvider.initKtProvider()
 }
 
 // Android 在 Application 的 onCreate 中加载
 class App : Application() {
   override fun onCreate() {
     super.onCreate()
-    KtProvider.init()
+    KtProvider.initKtProvider()
   }
 }
 ```
@@ -122,7 +124,7 @@ class TestServiceImpl : ITestService {
 | 注解                 | 作用            |                                            |
 |--------------------|---------------|--------------------------------------------|
 | NewImplProvider    | 每次获取都是新的实例    |                                            |
-| SingleImplProvider | 每次获取都是单例      | 依靠 kt 的 lazy 实现，线程安全                       |
+| SingleImplProvider | 每次获取都是单例      | 依靠 kt 的 lazy 实现线程安全                        |
 | KClassProvider     | 获取实现类的 KClass | 封装一下就可用于获取 Android 中的 Class\<out Activity> |
 
 
@@ -145,20 +147,20 @@ dependencies {
 ```
 #### 代码中
 ```kotlin
-// 使用 ProviderManager 的获取服务
-val service = ProviderManager.getImplOrNull<ITestService>("test")
+// 使用 KtProviderManager 的获取服务
+val service = KtProviderManager.getImplOrNull(ITestService::class, "test")
 println(service.get())
 ```
 
 ## 实现原理
 基于 Kotlin Compile Plugin 中的 ir 插桩，寻找启动模块依赖的所有模块中包含有对应注解的类，
-然后添加到 `ProviderInitialize` 实现类的 `init` 方法下  
+然后添加到 `KtProviderInitializer` 实现类的 `init` 方法下  
 类似于如下代码:
 ```kotlin
-object KtProvider : ProviderInitialize() {
+object KtProvider : KtProviderInitializer() {
   // 如果没有重写 init 方法，则会自动重写
   // 如果已经重写，则在方法体的第一行插入 _initImpl()
-  override fun init() {
+  override fun initKtProvider() {
     _initImpl() // 先调用 _initImpl 方法进行初始化
     // ... 后面是你重写的内容
   }
@@ -174,10 +176,10 @@ object KtProvider : ProviderInitialize() {
 ```
 
 ## 自定义封装
-我只设计了服务提供框架的底层支持，你可以实现自己的 ProviderManager 来扩展其他功能  
+我只设计了服务提供框架的底层支持，你可以实现自己的 KtProviderManager 来扩展其他功能  
 
 `io.github.985892345.KtProvider` 的 gradle 插件只跟 `provider-init`、`provider-annotation` 挂钩，
-你可以不依赖 `provider-manager`，实现自己的 ProviderManager，具体实现逻辑请看源码
+你可以不依赖 `provider-manager`，实现自己的 KtProviderManager，具体实现逻辑请看源码
 
 ## License
 ```
