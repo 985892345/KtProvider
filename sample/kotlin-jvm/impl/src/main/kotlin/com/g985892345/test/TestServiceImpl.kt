@@ -26,7 +26,7 @@ class TestServiceImpl : ITestService {
 // }
 
 @SingleImplProvider(clazz = ITestService::class, "single")
-class SingleTestServiceImpl : ITestService {
+object SingleTestServiceImpl : ITestService {
   override fun get(): String {
     return toString()
   }

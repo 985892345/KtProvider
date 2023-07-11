@@ -1,10 +1,6 @@
 package com.g985892345.provider.manager
 
 import com.g985892345.provider.init.KtProviderInitializer
-import com.g985892345.provider.init.wrapper.IProviderWrapper
-import com.g985892345.provider.init.wrapper.KClassProviderWrapper
-import com.g985892345.provider.init.wrapper.NewImplProviderWrapper
-import com.g985892345.provider.init.wrapper.SingleImplProviderWrapper
 import kotlin.reflect.KClass
 
 /**
@@ -15,56 +11,72 @@ import kotlin.reflect.KClass
  * 2023/6/13 22:05
  */
 object KtProviderManager {
+  
+  fun <T : Any> getImplOrNull(name: String, singleton: Boolean? = null): T? =
+    getImplOrNullInternal(null, name, singleton)
+  
+  fun <T : Any> getImplOrNull(clazz: KClass<T>, singleton: Boolean? = null): T? =
+    getImplOrNullInternal(clazz, "", singleton)
+  
+  fun <T : Any> getImplOrNull(clazz: KClass<T>, name: String = "", singleton: Boolean? = null): T? =
+    getImplOrNullInternal(clazz, name, singleton)
+  
+  fun <T : Any> getImplOrThrow(name: String, singleton: Boolean? = null): T =
+    getImplOrNull(name, singleton)!!
+  
+  fun <T : Any> getImplOrThrow(clazz: KClass<T>, singleton: Boolean? = null): T =
+    getImplOrNull(clazz, singleton)!!
+  
+  fun <T : Any> getImplOrThrow(clazz: KClass<T>, name: String = "", singleton: Boolean? = null): T =
+    getImplOrNull(clazz, name, singleton)!!
+  
+  fun <T : Any> getKClassOrNull(name: String): KClass<out T>? {
+    return KtProviderInitializer.KClassProviderMap[name]?.get()
+  }
+  
+  fun <T : Any> getKClassOrThrow(name: String): KClass<out T> = getKClassOrNull(name)!!
+  
   /**
-   * 获取 key 对应的 [IProviderWrapper]
-   *
-   * 如果你想实现自己的服务提供者，可以参考该实现
+   * 获取 @NewImplProvider 中 clazz 参数为 [clazz] 的所有实现类
+   * @return 返回 () -> T 用于延迟初始化
    */
-  internal fun getWrapperOrNull(key: String): IProviderWrapper? {
-    return KtProviderInitializer.ProviderMap[key]
+  @Suppress("UNCHECKED_CAST")
+  fun <T : Any> getNewImpls(clazz: KClass<T>): List<() -> T> {
+    return KtProviderInitializer.NewImplProviderMap[clazz]
+      ?.values
+      ?.map { { it.newInstance() as T } }
+      ?: emptyList()
+  }
+  
+  /**
+   * 获取 @SingleImplProvider 中 clazz 参数为 [clazz] 的所有实现类
+   * @return 返回 () -> T 用于延迟初始化
+   */
+  @Suppress("UNCHECKED_CAST")
+  fun <T : Any> getSingleImpls(clazz: KClass<T>): List<() -> T> {
+    return KtProviderInitializer.SingleImplProviderMap[clazz]
+      ?.values
+      ?.map { { it.getInstance() as T } }
+      ?: emptyList()
+  }
+  
+  @Suppress("UNCHECKED_CAST")
+  private fun <T> getImplOrNullInternal(
+    clazz: KClass<*>?,
+    name: String,
+    singleton: Boolean?
+  ): T? {
+    if (clazz == null && name.isEmpty()) {
+      throw IllegalArgumentException("必须包含 clazz 或者 name!")
+    }
+    val clazz2 = clazz ?: Nothing::class
+    return when (singleton) {
+      null -> {
+        KtProviderInitializer.SingleImplProviderMap[clazz2]?.get(name)?.getInstance() as T?
+          ?: KtProviderInitializer.NewImplProviderMap[clazz2]?.get(name)?.newInstance() as T?
+      }
+      true -> KtProviderInitializer.SingleImplProviderMap[clazz2]?.get(name)?.getInstance() as T?
+      false -> KtProviderInitializer.NewImplProviderMap[clazz2]?.get(name)?.newInstance() as T?
+    }
   }
 }
-
-@Suppress("UNCHECKED_CAST")
-private fun <T> KtProviderManager.getImplOrNullInternal(
-  clazz: KClass<*>?,
-  name: String,
-  singleton: Boolean?
-): T? {
-  val key = if (clazz == null) {
-    name.ifEmpty { throw IllegalArgumentException("必须包含 clazz 或者 name!") }
-  } else {
-    // 由于 Kotlin/Js 不支持 KClass.qualifiedName，所以使用 simpleName，要求接口类名不能出现重复
-    // https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.reflect/-k-class/qualified-name.html
-    if (name.isEmpty()) clazz.simpleName!! else clazz.simpleName + "-" + name
-  }
-  val wrapper = getWrapperOrNull(key)
-  val wrapperType = when (singleton) {
-    null -> wrapper is NewImplProviderWrapper || wrapper is SingleImplProviderWrapper
-    true -> wrapper is SingleImplProviderWrapper
-    false -> wrapper is NewImplProviderWrapper
-  }
-  return if (wrapperType) wrapper!!.get() as T else null
-}
-
-fun <T : Any> KtProviderManager.getImplOrNull(name: String, singleton: Boolean? = null): T? =
-  getImplOrNullInternal(null, name, singleton)
-fun <T : Any> KtProviderManager.getImplOrNull(clazz: KClass<T>, singleton: Boolean? = null): T? =
-  getImplOrNullInternal(clazz, "", singleton)
-fun <T : Any> KtProviderManager.getImplOrNull(clazz: KClass<T>, name: String = "", singleton: Boolean? = null): T? =
-  getImplOrNullInternal(clazz, name, singleton)
-
-fun <T : Any> KtProviderManager.getImplOrThrow(name: String, singleton: Boolean? = null): T =
-  getImplOrNull(name, singleton)!!
-fun <T : Any> KtProviderManager.getImplOrThrow(clazz: KClass<T>, singleton: Boolean? = null): T =
-  getImplOrNull(clazz, singleton)!!
-fun <T : Any> KtProviderManager.getImplOrThrow(clazz: KClass<T>, name: String = "", singleton: Boolean? = null): T =
-  getImplOrNull(clazz, name, singleton)!!
-
-@Suppress("UNCHECKED_CAST")
-fun <T : Any> KtProviderManager.getKClassOrNull(name: String): KClass<out T>? {
-  val wrapper = getWrapperOrNull(name)
-  return if (wrapper is KClassProviderWrapper) wrapper.get() as KClass<out T> else null
-}
-
-fun <T : Any> KtProviderManager.getKClassOrThrow(name: String): KClass<out T> = getKClassOrNull(name)!!

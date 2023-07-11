@@ -24,12 +24,15 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
     val project = kotlinCompilation.target.project
     val ktProviderExtensions = project.extensions.getByType(KtProviderExtensions::class.java)
+    val isCheckImpl = ktProviderExtensions.isCheckImpl.toString()
     val nameMatcher = ktProviderExtensions.packageNameManager.nameMatcher
-    val name = if (nameMatcher.isEmpty()) "" else nameMatcher.joinToString("&")
     return project.provider {
-      listOf(
-        SubpluginOption("package", name)
-      )
+      mutableListOf<SubpluginOption>().apply {
+        add(SubpluginOption("isCheckImpl", isCheckImpl))
+        if (nameMatcher.isNotEmpty()) {
+          add(SubpluginOption("package", nameMatcher.joinToString("&")))
+        }
+      }
     }
   }
   

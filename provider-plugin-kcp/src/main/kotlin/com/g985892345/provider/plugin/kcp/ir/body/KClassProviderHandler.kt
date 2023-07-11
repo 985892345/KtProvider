@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.overrides
@@ -71,11 +72,11 @@ class KClassProviderHandler : ProviderHandler {
           val name = it.allValueArguments[nameArg]?.value as String?
           val key = getKey(descriptor, name)
           ProviderHandler.putAndCheckUniqueKey(key) {
-            val nameArgMsg = if (name != null) "name = $name" else ""
+            val nameArgMsg = if (name != null) "name=$name" else ""
             "已包含重复的申明: $nameArgMsg"
           }
           messageCollector.report(
-            CompilerMessageSeverity.LOGGING,
+            CompilerMessageSeverity.INFO,
             "@KClassProvider: ${descriptor.classId!!.asFqNameString()}"
           )
           val classSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
@@ -98,12 +99,12 @@ class KClassProviderHandler : ProviderHandler {
         1,
         IrFunctionExpressionImpl(
           startOffset, endOffset,
-          pluginContext.irBuiltIns.functionN(0).typeWith(pluginContext.irBuiltIns.anyType),
+          pluginContext.irBuiltIns.functionN(0).typeWith(pluginContext.irBuiltIns.kClassClass.starProjectedType),
           initImplFunction.factory.buildFun {
             name = Name.special("<anonymous>")
             origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
             visibility = DescriptorVisibilities.LOCAL
-            returnType = pluginContext.irBuiltIns.anyType
+            returnType = pluginContext.irBuiltIns.kClassClass.starProjectedType
           }.also { lambda ->
             lambda.setDeclarationsParent(initImplFunction)
             lambda.body = DeclarationIrBuilder(pluginContext, lambda.symbol).irBlockBody {

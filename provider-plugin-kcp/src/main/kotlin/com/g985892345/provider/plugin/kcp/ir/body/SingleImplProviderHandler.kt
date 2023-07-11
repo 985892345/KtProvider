@@ -14,9 +14,12 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.ClassId
@@ -31,13 +34,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
  * @author 985892345
  * 2023/6/15 15:48
  */
-class SingleImplProviderHandler : ProviderHandler {
+class SingleImplProviderHandler(val isCheckImpl: Boolean) : ProviderHandler {
   
   private val singleImplProviderAnnotation = FqName("com.g985892345.provider.annotation.SingleImplProvider")
   private val clazzArg = Name.identifier("clazz")
   private val nameArg = Name.identifier("name")
   private lateinit var singleImplProviderFunction: IrSimpleFunction
   private lateinit var messageCollector: MessageCollector
+  private lateinit var nothingSymbol: IrClassSymbol
   
   override fun init(
     moduleFragment: IrModuleFragment,
@@ -56,6 +60,8 @@ class SingleImplProviderHandler : ProviderHandler {
       .single {
         it.overrides(superClassFunction)
       }
+    nothingSymbol =
+      pluginContext.referenceClass(ClassId(FqName("kotlin"), FqName("Nothing"), false))!!
   }
   
   override fun IrBlockBodyBuilder.processInitImplFunction(
@@ -74,34 +80,55 @@ class SingleImplProviderHandler : ProviderHandler {
           }
           val kClass = it.allValueArguments[clazzArg]?.value as KClassValue.Value.NormalClass?
           val name = it.allValueArguments[nameArg]?.value as String?
-          val key = getKey(descriptor, kClass?.classId, name)
-          val classIdArgMsg = if (kClass != null) "classId = " + kClass.classId.asFqNameString() + "   " else ""
-          val nameArgMsg = if (name != null) "name = $name" else ""
-          ProviderHandler.putAndCheckUniqueKey(key) {
+          if (kClass == null && name == null) {
+            throw IllegalArgumentException("必须设置 clazz 或者 name!   class=${descriptor.classId!!.asFqNameString()}")
+          }
+          val classIdArgMsg = if (kClass != null) "clazz=" + kClass.classId.asFqNameString() + "   " else ""
+          val nameArgMsg = if (name != null) "name=$name" else ""
+          ProviderHandler.putAndCheckUniqueKey(kClass?.classId?.asFqNameString() + " " + name) {
             "已包含重复的申明: $classIdArgMsg$nameArgMsg"
           }
+          val implSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
+          val clazzArgSymbol = kClass?.classId?.let { pluginContext.referenceClass(it) }
+          if (isCheckImpl && clazzArgSymbol != null && !implSymbol.isSubtypeOfClass(clazzArgSymbol)) {
+            throw IllegalStateException("被注解类不是注解中标注参数的实现类   class=${descriptor.classId!!.asFqNameString()}")
+          }
           messageCollector.report(
-            CompilerMessageSeverity.LOGGING,
+            CompilerMessageSeverity.INFO,
             "@SingleImplProvider: ${descriptor.classId!!.asFqNameString()} -> $classIdArgMsg$nameArgMsg"
           )
-          val classSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
-          +irAddSingleImplProvider(pluginContext, key, classSymbol, initImplFunction)
+          +irAddSingleImplProvider(
+            pluginContext,
+            clazzArgSymbol,
+            name,
+            implSymbol,
+            initImplFunction
+          )
         }
     }
   }
   
   private fun IrBuilderWithScope.irAddSingleImplProvider(
     pluginContext: IrPluginContext,
-    key: String,
+    clazzArg: IrClassSymbol?,
+    nameArg: String?,
     classSymbol: IrClassSymbol,
     initImplFunction: IrSimpleFunction,
   ): IrExpression {
     return irCall(singleImplProviderFunction).also { call ->
       call.dispatchReceiver = irGet(initImplFunction.dispatchReceiverParameter!!)
-      val nameStr = key.toIrConst(pluginContext.irBuiltIns.stringType)
-      call.putValueArgument(0, nameStr)
       call.putValueArgument(
-        1,
+        0,
+        IrClassReferenceImpl(
+          startOffset, endOffset,
+          context.irBuiltIns.kClassClass.starProjectedType,
+          context.irBuiltIns.kClassClass,
+          (clazzArg ?: nothingSymbol).defaultType
+        )
+      )
+      call.putValueArgument(1, irString(nameArg ?: ""))
+      call.putValueArgument(
+        2,
         IrFunctionExpressionImpl(
           UNDEFINED_OFFSET, UNDEFINED_OFFSET,
           pluginContext.irBuiltIns.functionN(0).typeWith(pluginContext.irBuiltIns.anyType),
@@ -125,22 +152,6 @@ class SingleImplProviderHandler : ProviderHandler {
           IrStatementOrigin.LAMBDA
         )
       )
-    }
-  }
-  
-  private fun getKey(descriptor: ClassDescriptor, classId: ClassId?, name: String?): String {
-    return if (classId == null) {
-      if (name.isNullOrEmpty()) {
-        throw IllegalArgumentException("必须设置 clazz 或者 name!   class=${descriptor.classId!!.asFqNameString()}")
-      } else {
-        name
-      }
-    } else {
-      if (name.isNullOrEmpty()) {
-        classId.relativeClassName.asString()
-      } else {
-        classId.relativeClassName.asString() + "-$name"
-      }
     }
   }
 }

@@ -1,9 +1,9 @@
 package com.g985892345.provider.init
 
-import com.g985892345.provider.init.wrapper.IProviderWrapper
 import com.g985892345.provider.init.wrapper.KClassProviderWrapper
 import com.g985892345.provider.init.wrapper.NewImplProviderWrapper
 import com.g985892345.provider.init.wrapper.SingleImplProviderWrapper
+import kotlin.reflect.KClass
 
 /**
  * 初始化服务
@@ -23,31 +23,34 @@ interface KtProviderInitializer {
   /**
    * 添加一个 NewImplProvider，key 的规则请遵循 KtProviderManager 获取服务时的设置
    */
-  fun addNewImplProvider(key: String, init: () -> Any) {
-    ProviderMapInternal[key] = NewImplProviderWrapper(init)
+  fun addNewImplProvider(clazz: KClass<*>, name: String, init: () -> Any) {
+    NewImplProviderMapInternal.getOrPut(clazz) { hashMapOf() }[name] = NewImplProviderWrapper(init)
   }
   
   /**
    * 添加一个 SingleImplProvider，key 的规则请遵循 KtProviderManager 获取服务时的设置
    */
-  fun addSingleImplProvider(key: String, init: () -> Any) {
-    ProviderMapInternal[key] = SingleImplProviderWrapper(init)
+  fun addSingleImplProvider(clazz: KClass<*>, name: String, init: () -> Any) {
+    SingleImplProviderMapInternal.getOrPut(clazz) { hashMapOf() }[name] = SingleImplProviderWrapper(init)
   }
   
   /**
    * 添加一个 KClassProvider，key 的规则请遵循 KtProviderManager 获取服务时的设置
    */
-  fun addKClassProvider(key: String, init: () -> Any) {
-    ProviderMapInternal[key] = KClassProviderWrapper(init)
+  fun addKClassProvider(name: String, init: () -> KClass<*>) {
+    KClassProviderMapInternal[name] = KClassProviderWrapper(init)
   }
   
   companion object {
-    protected val ProviderMapInternal = hashMapOf<String, IProviderWrapper>()
+    protected val NewImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
+    protected val SingleImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
+    protected val KClassProviderMapInternal = hashMapOf<String, KClassProviderWrapper>()
     
-    /**
-     * key 与 IProviderWrapper，key 为 class 和 name 的结合，具体实现可查看 KtProviderManager 获取服务时的设置
-     */
-    val ProviderMap: Map<String, IProviderWrapper>
-      get() = ProviderMapInternal
+    val NewImplProviderMap: Map<KClass<*>, Map<String, NewImplProviderWrapper>>
+      get() = NewImplProviderMapInternal
+    val SingleImplProviderMap: Map<KClass<*>, Map<String, SingleImplProviderWrapper>>
+      get() = SingleImplProviderMapInternal
+    val KClassProviderMap: Map<String, KClassProviderWrapper>
+      get() = KClassProviderMapInternal
   }
 }

@@ -1,7 +1,5 @@
 import com.g985892345.provider.init.KtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
-import com.g985892345.provider.manager.getImplOrThrow
-import com.g985892345.provider.manager.getKClassOrThrow
 
 /**
  * .
@@ -23,6 +21,10 @@ fun main() {
   println(service32.get())
   val kClass = KtProviderManager.getKClassOrThrow<ITestService>("class")
   println(kClass)
+  val singleImplList = KtProviderManager.getSingleImpls(ITestService::class)
+  println("$singleImplList -> ${singleImplList.map { it.invoke() }}")
+  val newImplList = KtProviderManager.getNewImpls(ITestService::class)
+  println("$newImplList -> ${newImplList.map { it.invoke() }}")
   println(KtProvider::class.members.map { it.name })
   println(KtProvider::class.java.methods.map { it.name })
 }

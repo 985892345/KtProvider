@@ -14,9 +14,12 @@ import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.ClassId
@@ -31,13 +34,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
  * @author 985892345
  * 2023/6/15 14:57
  */
-class NewImplProviderHandler : ProviderHandler {
+class NewImplProviderHandler(val isCheckImpl: Boolean) : ProviderHandler {
   
   private val newImplProviderAnnotation = FqName("com.g985892345.provider.annotation.NewImplProvider")
   private val clazzArg = Name.identifier("clazz")
   private val nameArg = Name.identifier("name")
   private lateinit var newImplProviderFunction: IrSimpleFunction
   private lateinit var messageCollector: MessageCollector
+  private lateinit var nothingSymbol: IrClassSymbol
   
   override fun init(
     moduleFragment: IrModuleFragment,
@@ -56,6 +60,8 @@ class NewImplProviderHandler : ProviderHandler {
       .single {
         it.overrides(superClassFunction)
       }
+    nothingSymbol =
+      pluginContext.referenceClass(ClassId(FqName("kotlin"), FqName("Nothing"), false))!!
   }
   
   override fun IrBlockBodyBuilder.processInitImplFunction(
@@ -72,37 +78,58 @@ class NewImplProviderHandler : ProviderHandler {
             ?: throw IllegalStateException("不存在空构造器 class=${descriptor.classId!!.asFqNameString()}")
           val kClass = annotation.allValueArguments[clazzArg]?.value as KClassValue.Value.NormalClass?
           val name = annotation.allValueArguments[nameArg]?.value as String?
-          val key = getKey(descriptor, kClass?.classId, name)
-          val classIdArgMsg = if (kClass != null) "classId = " + kClass.classId.asFqNameString() + "   " else ""
-          val nameArgMsg = if (name != null) "name = $name" else ""
-          ProviderHandler.putAndCheckUniqueKey(key) {
+          if (kClass == null && name == null) {
+            throw IllegalArgumentException("必须设置 clazz 或者 name!   class=${descriptor.classId!!.asFqNameString()}")
+          }
+          val classIdArgMsg = if (kClass != null) "clazz=" + kClass.classId.asFqNameString() + "   " else ""
+          val nameArgMsg = if (name != null) "name=$name" else ""
+          ProviderHandler.putAndCheckUniqueKey(kClass?.classId?.asFqNameString() + " " + name) {
             "已包含重复的申明: $classIdArgMsg$nameArgMsg   class=${descriptor.classId!!.asFqNameString()}"
           }
+          val implSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
+          val clazzArgSymbol = kClass?.classId?.let { pluginContext.referenceClass(it) }
+          if (isCheckImpl && clazzArgSymbol != null && !implSymbol.isSubtypeOfClass(clazzArgSymbol)) {
+            throw IllegalStateException("被注解类不是注解中标注参数的实现类   class=${descriptor.classId!!.asFqNameString()}")
+          }
           messageCollector.report(
-            CompilerMessageSeverity.LOGGING,
+            CompilerMessageSeverity.INFO,
             "@NewImplProvider: ${descriptor.classId!!.asFqNameString()} -> $classIdArgMsg$nameArgMsg"
           )
-          val irConstructor = pluginContext.referenceClass(descriptor.classId!!)!!
-            .owner
+          val irConstructor = implSymbol.owner
             .constructors
             .find { it.valueParameters.isEmpty() }!!
-          +irAddNewImplProvider(pluginContext, key, irConstructor, initImplFunction)
+          +irAddNewImplProvider(
+            pluginContext,
+            clazzArgSymbol,
+            name,
+            irConstructor,
+            initImplFunction
+          )
         }
     }
   }
   
   private fun IrBuilderWithScope.irAddNewImplProvider(
     pluginContext: IrPluginContext,
-    key: String,
+    clazzArg: IrClassSymbol?,
+    nameArg: String?,
     emptyConstructor: IrConstructor,
     initImplFunction: IrSimpleFunction,
   ): IrExpression {
     return irCall(newImplProviderFunction).also { call ->
       call.dispatchReceiver = irGet(initImplFunction.dispatchReceiverParameter!!)
-      val nameStr = key.toIrConst(pluginContext.irBuiltIns.stringType)
-      call.putValueArgument(0, nameStr)
       call.putValueArgument(
-        1,
+        0,
+        IrClassReferenceImpl(
+          startOffset, endOffset,
+          context.irBuiltIns.kClassClass.starProjectedType,
+          context.irBuiltIns.kClassClass,
+          (clazzArg ?: nothingSymbol).defaultType
+        )
+      )
+      call.putValueArgument(1, irString(nameArg ?: ""))
+      call.putValueArgument(
+        2,
         IrFunctionExpressionImpl(
           UNDEFINED_OFFSET, UNDEFINED_OFFSET,
           pluginContext.irBuiltIns.functionN(0).typeWith(pluginContext.irBuiltIns.anyType),

@@ -24,6 +24,7 @@ class KtProviderRegistrar : CompilerPluginRegistrar() {
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
     val message = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
     val packages = configuration.get(KtProviderGradlePlugin.ARG_PACKAGE) ?: emptyList()
-    IrGenerationExtension.registerExtension(KtProviderExtension(message, packages))
+    val isCheckImpl = configuration.get(KtProviderGradlePlugin.ARG_IS_CHECK_IMPL) ?: true
+    IrGenerationExtension.registerExtension(KtProviderExtension(message, packages, isCheckImpl))
   }
 }

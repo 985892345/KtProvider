@@ -33,12 +33,13 @@ import org.jetbrains.kotlin.name.FqName
 class KtProviderExtension(
   val message: MessageCollector,
   val packages: List<String>,
+  val isCheckImpl: Boolean,
 ) : IrGenerationExtension {
   
   private val handlers = listOf(
     KClassProviderHandler(),
-    NewImplProviderHandler(),
-    SingleImplProviderHandler(),
+    NewImplProviderHandler(isCheckImpl),
+    SingleImplProviderHandler(isCheckImpl),
   )
   
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
@@ -52,7 +53,15 @@ class KtProviderExtension(
           if (declaration.isSubclassOf(ktProviderInitializerSymbol.owner)) {
             if (isFound) throw IllegalStateException("存在多个 KtProviderInitializer 的实现类")
             isFound = true
-            handlers.forEach { it.init(moduleFragment, pluginContext, ktProviderInitializerSymbol, declaration, message) }
+            handlers.forEach {
+              it.init(
+                moduleFragment,
+                pluginContext,
+                ktProviderInitializerSymbol,
+                declaration,
+                message
+              )
+            }
             val initImplFunction = addInitImplFunction(pluginContext, declaration)
             val superInitFunction =
               ktProviderInitializerSymbol.owner.functions.single { it.name.asString() == "initKtProvider" }
@@ -103,7 +112,9 @@ class KtProviderExtension(
           }
         }.flatten()
     }
-    return packages.asSequence()
+    
+    val newPackage = if (packages.isNotEmpty()) packages else listOf("")
+    return newPackage.asSequence()
       .map {
         val descriptor = pluginContext.moduleDescriptor
           .getPackage(FqName(it))

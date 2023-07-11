@@ -19,15 +19,23 @@ import org.jetbrains.kotlin.config.CompilerConfigurationKey
 class KtProviderGradlePlugin : CommandLineProcessor {
   companion object {
     private const val OPTION_PACKAGE = "package"
+    private const val OPTION_IS_CHECK_IMPL = "isCheckImpl"
     
     val ARG_PACKAGE = CompilerConfigurationKey<List<String>>(OPTION_PACKAGE)
+    val ARG_IS_CHECK_IMPL = CompilerConfigurationKey<Boolean>(OPTION_IS_CHECK_IMPL)
   }
   override val pluginId: String = BuildConfig.PLUGIN_ID
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
     CliOption(
       optionName = OPTION_PACKAGE,
       valueDescription = "string",
-      description = "类名全称，形式如下: a.b&a.c",
+      description = "包名，多个以 & 连接，形式如下: a.b&a.c",
+      required = false
+    ),
+    CliOption(
+      optionName = OPTION_IS_CHECK_IMPL,
+      valueDescription = "boolean",
+      description = "是否检查被注解类是注解中标注参数的实现类(默认开启)",
       required = false
     )
   )
@@ -35,6 +43,7 @@ class KtProviderGradlePlugin : CommandLineProcessor {
   override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {
     when (option.optionName) {
       OPTION_PACKAGE -> configuration.put(ARG_PACKAGE, value.split("&"))
+      OPTION_IS_CHECK_IMPL -> configuration.put(ARG_IS_CHECK_IMPL, value.toBooleanStrictOrNull() ?: true)
     }
   }
 }
