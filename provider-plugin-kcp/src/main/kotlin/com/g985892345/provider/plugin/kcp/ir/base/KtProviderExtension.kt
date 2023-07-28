@@ -1,8 +1,8 @@
 package com.g985892345.provider.plugin.kcp.ir.base
 
-import com.g985892345.provider.plugin.kcp.ir.body.KClassProviderHandler
-import com.g985892345.provider.plugin.kcp.ir.body.NewImplProviderHandler
-import com.g985892345.provider.plugin.kcp.ir.body.SingleImplProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.kclass.KClassProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.impl.NewImplProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.impl.SingleImplProviderHandler
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 
 /**
  * .
@@ -31,28 +32,34 @@ import org.jetbrains.kotlin.name.FqName
  * 2023/6/13 23:08
  */
 class KtProviderExtension(
-  val message: MessageCollector,
-  val packages: List<String>,
-  val isCheckImpl: Boolean,
+  private val message: MessageCollector,
+  private val packages: List<String>,
+  private val isCheckImpl: Boolean,
 ) : IrGenerationExtension {
   
   private val handlers = listOf(
-    KClassProviderHandler(),
-    NewImplProviderHandler(isCheckImpl),
     SingleImplProviderHandler(isCheckImpl),
+    NewImplProviderHandler(isCheckImpl),
+    KClassProviderHandler(),
   )
   
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+    log("KtProvider init")
     var isFound = false
     val ktProviderInitializerClassId =
       ClassId(FqName("com.g985892345.provider.init"), FqName("KtProviderInitializer"), false)
+    // KtProviderInitializer 接口
     val ktProviderInitializerSymbol = pluginContext.referenceClass(ktProviderInitializerClassId)!!
     moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
       override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.isObject || declaration.isClass && (declaration.modality == Modality.OPEN || declaration.modality == Modality.FINAL)) {
+        // 筛选出 object 单例类或者是非抽象的 class
+        val modality = declaration.modality
+        if (declaration.isObject || declaration.isClass && (modality == Modality.OPEN || modality == Modality.FINAL)) {
+          // 检查是否是 KtProviderInitializer 的实现类
           if (declaration.isSubclassOf(ktProviderInitializerSymbol.owner)) {
             if (isFound) throw IllegalStateException("存在多个 KtProviderInitializer 的实现类")
             isFound = true
+            // 初始化所有 handler
             handlers.forEach {
               it.init(
                 moduleFragment,
@@ -62,10 +69,12 @@ class KtProviderExtension(
                 message
               )
             }
+            // 添加 _initImpl 方法
             val initImplFunction = addInitImplFunction(pluginContext, declaration)
             val superInitFunction =
               ktProviderInitializerSymbol.owner.functions.single { it.name.asString() == "initKtProvider" }
-            overrideInitFunction(pluginContext, declaration, superInitFunction, initImplFunction)
+            // 修改 initKtProvider 方法
+            overrideInitProviderFunction(pluginContext, declaration, superInitFunction, initImplFunction)
           }
         }
         return super.visitClass(declaration)
@@ -87,9 +96,11 @@ class KtProviderExtension(
       visibility = DescriptorVisibilities.PRIVATE
     ).also { initImplFun ->
       initImplFun.body = DeclarationIrBuilder(pluginContext, initImplFun.symbol).irBlockBody {
-        findAllClassDescriptors(pluginContext).forEach { classDescriptor ->
+        val allClassDescriptor = findAllClassDescriptors(pluginContext)
+        allClassDescriptor.forEach { classDescriptor ->
           handlers.forEach { handler ->
             handler.apply {
+              // 交给 handler 去处理 _initImpl 方法
               processInitImplFunction(pluginContext, initImplFun, classDescriptor)
             }
           }
@@ -98,6 +109,7 @@ class KtProviderExtension(
     }
   }
   
+  // 查找所有 ClassDescriptor，包含依赖
   private fun findAllClassDescriptors(
     pluginContext: IrPluginContext
   ): Sequence<ClassDescriptor> {
@@ -122,7 +134,7 @@ class KtProviderExtension(
       }.flatten()
   }
   
-  private fun overrideInitFunction(
+  private fun overrideInitProviderFunction(
     pluginContext: IrPluginContext,
     declaration: IrClass,
     superInitFunction: IrSimpleFunction,
@@ -140,6 +152,7 @@ class KtProviderExtension(
       ).also { newInitFun ->
         newInitFun.overriddenSymbols += initFun.overriddenSymbols
         newInitFun.body = DeclarationIrBuilder(pluginContext, newInitFun.symbol).irBlockBody {
+          // 插入调用 _initImpl 方法的逻辑
           +irCall(initImplFunction).also {
             it.dispatchReceiver = irGet(newInitFun.dispatchReceiverParameter!!)
           }
@@ -148,9 +161,11 @@ class KtProviderExtension(
     } else {
       // 重写了 initKtProvider 方法
       initFun.body = DeclarationIrBuilder(pluginContext, initFun.symbol).irBlockBody {
+        // 插入调用 _initImpl 方法的逻辑
         +irCall(initImplFunction).also {
           it.dispatchReceiver = irGet(initFun.dispatchReceiverParameter!!)
         }
+        // 原有的代码逻辑
         initFun.body?.statements?.forEach {
           +it
         }

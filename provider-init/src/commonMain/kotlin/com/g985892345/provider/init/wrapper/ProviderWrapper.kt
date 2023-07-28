@@ -3,7 +3,7 @@ package com.g985892345.provider.init.wrapper
 import kotlin.reflect.KClass
 
 /**
- * .
+ * 包裹初始化 init 的 Wrapper
  *
  * @author 985892345
  * 2023/6/14 11:41

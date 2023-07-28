@@ -3,7 +3,7 @@ package com.g985892345.provider.annotation
 import kotlin.reflect.KClass
 
 /**
- * .
+ * 所有注解
  *
  * @author 985892345
  * 2023/6/13 20:21
@@ -11,9 +11,8 @@ import kotlin.reflect.KClass
 
 /**
  * 每次获取都是新的实例
- * - 只支持带有无参构造器的普通 Class
- * - class 和 name 变量必须设置一个，也可以全都设置
- * - 因 Kotlin/Js 不支持 KClass.qualifiedName，只能使用 simpleName，所以要求接口类名不能相同（暂时未想到好的替代方案）
+ * - 只支持带有无参构造器的非抽象 class
+ * - [clazz] 和 [name] 最少设置一个
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)
@@ -22,9 +21,10 @@ annotation class NewImplProvider(val clazz: KClass<*> = Nothing::class, val name
 
 /**
  * 每次获取都是单例
- * - 支持带有无参构造器的普通 Class 和 object 单例类
- * - class 和 name 变量必须设置一个，也可以全都设置
- * - 因 Kotlin/Js 不支持 KClass.qualifiedName，只能使用 simpleName，所以要求接口类名不能相同（暂时未想到好的替代方案）
+ * - 支持带有无参构造器的非抽象 class 和 object 单例类
+ * - [clazz] 和 [name] 最少设置一个
+ *
+ * ## 注意
  * - 如果一个类被打上多个 @SingleImplProvider，则在不是 object 单例类时，每个注解获取到的实例会不相同
  */
 @Repeatable
@@ -34,6 +34,7 @@ annotation class SingleImplProvider(val clazz: KClass<*> = Nothing::class, val n
 
 /**
  * 获取实现类的 KClass
+ * - 支持 Class、object、接口
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)

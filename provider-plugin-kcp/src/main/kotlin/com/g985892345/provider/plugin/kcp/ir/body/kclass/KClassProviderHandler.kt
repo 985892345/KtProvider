@@ -1,5 +1,7 @@
-package com.g985892345.provider.plugin.kcp.ir.body
+package com.g985892345.provider.plugin.kcp.ir.body.kclass
 
+import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -69,17 +71,13 @@ class KClassProviderHandler : ProviderHandler {
       descriptor.annotations
         .filter { it.fqName == kClassProviderAnnotation }
         .forEach {
+          val classId = descriptor.classId!!
+          val location = classId.asFqNameString()
           val name = it.allValueArguments[nameArg]?.value as String?
           val key = getKey(descriptor, name)
-          ProviderHandler.putAndCheckUniqueKey(key) {
-            val nameArgMsg = if (name != null) "name=$name" else ""
-            "已包含重复的申明: $nameArgMsg"
-          }
-          messageCollector.report(
-            CompilerMessageSeverity.INFO,
-            "@KClassProvider: ${descriptor.classId!!.asFqNameString()}"
-          )
-          val classSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
+          putAndCheckUniqueKClassKey(key, location)
+          messageCollector.log("@KClassProvider: $location")
+          val classSymbol = pluginContext.referenceClass(classId)!!
           +irAddKClassProvider(pluginContext, key, classSymbol, initImplFunction)
         }
     }
@@ -125,6 +123,29 @@ class KClassProviderHandler : ProviderHandler {
   }
   
   private fun getKey(descriptor: ClassDescriptor, name: String?): String {
-    return name ?: throw IllegalArgumentException("必须设置 name!   class=${descriptor.classId!!.asFqNameString()}")
+    if (name == null) {
+      throw IllegalArgumentException("必须设置 name!   class=${descriptor.location}")
+    } else if (name.isEmpty()) {
+      throw IllegalArgumentException("name 不能为空串!   class=${descriptor.location}")
+    }
+    return name
+  }
+  
+  private val ClassDescriptor.location: String
+    get() = classId!!.asFqNameString()
+  
+  companion object {
+    private val UniqueKey = hashMapOf<String, String>()
+    
+    fun putAndCheckUniqueKClassKey(key: String, locationMsg: String) {
+      val lastLocationMsg = UniqueKey[key]
+      if (lastLocationMsg != null) {
+        throw IllegalArgumentException(
+          "包含重复的申明: $key\n位置1: $lastLocationMsg\n位置2: $locationMsg"
+        )
+      } else {
+        UniqueKey[key] = locationMsg
+      }
+    }
   }
 }

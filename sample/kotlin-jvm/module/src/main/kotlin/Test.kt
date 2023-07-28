@@ -21,12 +21,15 @@ fun main() {
   println(service32.get())
   val kClass = KtProviderManager.getKClassOrThrow<ITestService>("class")
   println(kClass)
-  val singleImplList = KtProviderManager.getSingleImpls(ITestService::class)
-  println("$singleImplList -> ${singleImplList.map { it.invoke() }}")
-  val newImplList = KtProviderManager.getNewImpls(ITestService::class)
-  println("$newImplList -> ${newImplList.map { it.invoke() }}")
+  val singleImplList = KtProviderManager.getAllSingleImpl(ITestService::class)
+  println("$singleImplList -> ${singleImplList.map { it.value.invoke() }}")
+  val newImplList = KtProviderManager.getAllNewImpl(ITestService::class)
+  println("$newImplList -> ${newImplList.map { it.value.invoke() }}")
   println(KtProvider::class.members.map { it.name })
   println(KtProvider::class.java.methods.map { it.name })
+  
+  println()
+  println(KtProviderManager.getImplOrThrow(ITestService2::class, null))
 }
 
 object KtProvider : KtProviderInitializer {

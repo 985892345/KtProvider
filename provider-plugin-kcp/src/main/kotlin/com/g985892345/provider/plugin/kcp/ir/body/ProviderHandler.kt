@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
  * @author 985892345
  * 2023/6/14 23:45
  */
-sealed interface ProviderHandler {
+interface ProviderHandler {
   
   fun init(
     moduleFragment: IrModuleFragment,
@@ -30,16 +30,4 @@ sealed interface ProviderHandler {
     initImplFunction: IrSimpleFunction,
     descriptor: ClassDescriptor,
   )
-  
-  companion object {
-    private val UniqueKey = hashSetOf<String>()
-    
-    fun putAndCheckUniqueKey(key: String, msg: (() -> String)? = null) {
-      if (UniqueKey.contains(key)) {
-        throw IllegalArgumentException(msg?.invoke() ?: "已包含重复的 key")
-      } else {
-        UniqueKey.add(key)
-      }
-    }
-  }
 }

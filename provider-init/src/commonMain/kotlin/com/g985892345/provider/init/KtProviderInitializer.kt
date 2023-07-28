@@ -21,30 +21,31 @@ interface KtProviderInitializer {
   }
   
   /**
-   * 添加一个 NewImplProvider，key 的规则请遵循 KtProviderManager 获取服务时的设置
+   * 添加一个 @NewImplProvider 的初始化 init，可重写自定义逻辑
    */
   fun addNewImplProvider(clazz: KClass<*>, name: String, init: () -> Any) {
     NewImplProviderMapInternal.getOrPut(clazz) { hashMapOf() }[name] = NewImplProviderWrapper(init)
   }
   
   /**
-   * 添加一个 SingleImplProvider，key 的规则请遵循 KtProviderManager 获取服务时的设置
+   * 添加一个 @SingleImplProvider 的初始化 init，可重写自定义逻辑
    */
   fun addSingleImplProvider(clazz: KClass<*>, name: String, init: () -> Any) {
     SingleImplProviderMapInternal.getOrPut(clazz) { hashMapOf() }[name] = SingleImplProviderWrapper(init)
   }
   
   /**
-   * 添加一个 KClassProvider，key 的规则请遵循 KtProviderManager 获取服务时的设置
+   * 添加一个 @KClassProvider 的初始化 init，可重写自定义逻辑
    */
   fun addKClassProvider(name: String, init: () -> KClass<*>) {
     KClassProviderMapInternal[name] = KClassProviderWrapper(init)
   }
   
   companion object {
-    protected val NewImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
-    protected val SingleImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
-    protected val KClassProviderMapInternal = hashMapOf<String, KClassProviderWrapper>()
+    // 你不应该对这几个 Map 进行直接修改，而是通过重写 add* 方法来实现自定义
+    private val NewImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
+    private val SingleImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
+    private val KClassProviderMapInternal = hashMapOf<String, KClassProviderWrapper>()
     
     val NewImplProviderMap: Map<KClass<*>, Map<String, NewImplProviderWrapper>>
       get() = NewImplProviderMapInternal
