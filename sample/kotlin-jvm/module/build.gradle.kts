@@ -1,6 +1,6 @@
 plugins {
   kotlin("jvm")
-  id("io.github.985892345.KtProvider") version "1.0.1-alpha32-SNAPSHOT" // 测试时记得改这里的版本号
+  id("io.github.985892345.KtProvider") version "1.0.1-alpha33-SNAPSHOT" // 测试时记得改这里的版本号
 }
 
 group = "org.example"
