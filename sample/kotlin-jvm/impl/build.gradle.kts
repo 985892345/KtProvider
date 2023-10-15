@@ -1,22 +1,13 @@
 plugins {
   kotlin("jvm")
+  id("io.github.985892345.KtProvider") version "1.0.1-alpha55-SNAPSHOT" // 测试时记得改这里的版本号
 }
 
 group = "org.example"
 version = "unspecified"
 
 dependencies {
-  testImplementation(platform("org.junit:junit-bom:5.9.1"))
-  testImplementation("org.junit.jupiter:junit-jupiter")
-  
   implementation(rootProject.project("sample:kotlin-jvm:api"))
-  
-  val version = properties["VERSION"].toString()
-  implementation("io.github.985892345:provider-annotation-jvm:$version")
-}
-
-tasks.test {
-  useJUnitPlatform()
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))

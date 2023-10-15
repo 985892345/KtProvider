@@ -1,8 +1,8 @@
 # KtProvider
 ![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=KtProvider-SNAPSHOT)  
-支持 KMM 的跨模块服务提供轻量级框架  
-- 支持 KMM，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
-- 支持 KMM 的多模块工程 (目前未测试，理论上支持)
+支持 KMP(KMM) 的跨模块服务提供轻量级框架  
+- 支持 KMP(KMM)，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
+- 支持 KMP(KMM) 的多模块工程 (目前未测试，理论上支持)
 - 只提供底层支持，允许对服务管理者进一步封装
 
 ## 引入教程
@@ -47,48 +47,33 @@ plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
-// 引入 provider-init 依赖
-dependencies {
-  val krProviderVersion = "x.y.z"
-  // 如果你是 KMM 项目
-  implementation("io.github.985892345:provider-init:$krProviderVersion")
-  
-  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
-  implementation("io.github.985892345:provider-init-jvm:$krProviderVersion")
-  
-  // 当然也有 -js 和 -native（但未经过测试）
-}
-
 ktProvider {
-  packageName {
-    // 设置 packageName，则会自动寻找该 package 以及所有子包下的类
-    include("com.g985892345.test") // 可设置多个 packageName
-  }
+  // 可以设置一些东西
 }
 ```
+使用 KtProvider 插件后会自动生成一个 `IKtProviderInitializer` 接口的实现类，
+并且会根据该模块的依赖关系自动调用其他模块的 `initProvider()` 方法
+
 #### 代码中
 ```kotlin
-// 新建一个 kt 类并实现于 KtProviderInitializer
-// 支持传递，即你可以在基础模块中初步实现 KtProviderInitializer，
-// 但是启动模块仍然需要一个且只能有一个类(抽象类除外)间接或直接实现 KtProviderInitializer
-object KtProvider : KtProviderInitializer
-
 // 然后在启动函数中进行加载
 fun main() {
-  KtProvider.initKtProvider()
+  // 调用自动生成的 XXXKtProviderInitializer
+  // 该类名默认为 模块名+KtProviderInitializer，可在 ktProvider 闭包中设置
+  XXXKtProviderInitializer.initKtProvider()
 }
 
 // Android 在 Application 的 onCreate 中加载
 class App : Application() {
   override fun onCreate() {
     super.onCreate()
-    KtProvider.initKtProvider()
+    XXXKtProviderInitializer.initKtProvider()
   }
 }
 ```
 
 ### api 模块
-api 模块即定义接口的模块，此模块只需要定义接口即可
+api 模块即定义接口的模块，此模块只需要定义接口即可，不需要引入 KtProvider 插件
 ```kotlin
 interface ITestService {
   fun get(): String
@@ -99,16 +84,12 @@ interface ITestService {
 实现模块依赖 api 模块，启动模块需要间接或直接依赖实现模块（使用 runtimeOnly 会导致不参与编译而无效）
 #### build.gradle.kts
 ```kotlin
-// 引入 provider-annotation 依赖
-dependencies {
-  val krProviderVersion = "x.y.z"
-  // 如果你是 KMM 项目
-  implementation("io.github.985892345:provider-annotation:$krProviderVersion")
-  
-  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
-  implementation("io.github.985892345:provider-annotation-jvm:$krProviderVersion")
-  
-  // 当然也有 -js 和 -native（但未经过测试）
+plugins {
+  id("io.github.985892345.KtProvider") version "x.y.z"
+}
+
+ktProvider {
+  // 可以设置一些东西
 }
 ```
 #### 代码中
@@ -153,11 +134,12 @@ println(service.get())
 ```
 
 ## 实现原理
+### ir 查桩
 基于 Kotlin Compile Plugin 中的 ir 插桩，寻找启动模块依赖的所有模块中包含有对应注解的类，
-然后添加到 `KtProviderInitializer` 实现类的 `init` 方法下  
+然后添加到 `IKtProviderInitializer` 实现类的 `init` 方法下  
 类似于如下代码:
 ```kotlin
-object KtProvider : KtProviderInitializer() {
+object KtProvider : IKtProviderInitializer {
   // 如果没有重写 init 方法，则会自动重写
   // 如果已经重写，则在方法体的第一行插入 _initImpl()
   override fun initKtProvider() {
@@ -174,12 +156,18 @@ object KtProvider : KtProviderInitializer() {
   }
 }
 ```
+### 自动生成 IKtProviderInitializer 实现类
+KtProvider 的 gradle 插件会自动生成 `IKtProviderInitializer` 的实现类，
+然后根据模块之间的依赖关系，自动调用其他模块实现类的 `initProvider()` 方法
+（但只允许 implementation、api 依赖其他模块）
+
 
 ## 自定义封装
 我只设计了服务提供框架的底层支持，你可以实现自己的 KtProviderManager 来扩展其他功能  
 
-`io.github.985892345.KtProvider` 的 gradle 插件只跟 `provider-init`、`provider-annotation` 挂钩，
+`io.github.985892345.KtProvider` 的 gradle 插件默认依赖了 `provider-init`、`provider-annotation`，
 你可以不依赖 `provider-manager`，实现自己的 KtProviderManager，具体实现逻辑请看源码
+
 
 ## License
 ```

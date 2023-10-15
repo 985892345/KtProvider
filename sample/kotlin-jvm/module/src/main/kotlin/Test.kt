@@ -1,4 +1,4 @@
-import com.g985892345.provider.init.KtProviderInitializer
+import com.g985892345.provider.KtProvider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
 
 /**
@@ -8,7 +8,7 @@ import com.g985892345.provider.manager.KtProviderManager
  * 2023/6/20 22:07
  */
 fun main() {
-  KtProvider.initKtProvider() // 初始化服务
+  ModuleKtProviderInitializer.initKtProvider() // 初始化服务
   val service1 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = null)
   println(service1.get())
   val service21 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = false)
@@ -25,15 +25,8 @@ fun main() {
   println("$singleImplList -> ${singleImplList.map { it.value.invoke() }}")
   val newImplList = KtProviderManager.getAllNewImpl(ITestService::class)
   println("$newImplList -> ${newImplList.map { it.value.invoke() }}")
-  println(KtProvider::class.members.map { it.name })
-  println(KtProvider::class.java.methods.map { it.name })
-  
-  println()
-  println(KtProviderManager.getImplOrThrow(ITestService2::class, null))
-}
+  println(ModuleKtProviderInitializer::class.members.map { it.name })
+  println(ModuleKtProviderInitializer::class.java.methods.map { it.name })
 
-object KtProvider : KtProviderInitializer {
-  override fun initKtProvider() {
-    super.initKtProvider()
-  }
+  println()
 }

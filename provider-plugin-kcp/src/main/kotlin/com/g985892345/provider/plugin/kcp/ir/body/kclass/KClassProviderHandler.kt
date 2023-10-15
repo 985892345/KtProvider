@@ -4,7 +4,6 @@ import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.builders.*
@@ -13,6 +12,8 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -22,9 +23,7 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.overrides
-import org.jetbrains.kotlin.ir.util.setDeclarationsParent
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
@@ -38,48 +37,52 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 class KClassProviderHandler : ProviderHandler {
   
   private val kClassProviderAnnotation = FqName("com.g985892345.provider.annotation.KClassProvider")
-  private val nameArg = Name.identifier("name")
-  private lateinit var addKClassProviderFunction: IrSimpleFunction
+  private val mIrClassWithAnnotation = mutableListOf<Pair<IrClass, IrConstructorCall>>()
   private lateinit var messageCollector: MessageCollector
   
   override fun init(
-    moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
-    ktProviderInitializer: IrClassSymbol,
-    ktProviderInitializerImpl: IrClass,
+    moduleFragment: IrModuleFragment,
     messageCollector: MessageCollector
   ) {
     this.messageCollector = messageCollector
+  }
+  
+  override fun selectIrClass(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment, irClass: IrClass) {
+    if (irClass.isClass || irClass.isInterface || irClass.isObject) {
+      irClass.annotations.forEach {
+        if (it.isAnnotation(kClassProviderAnnotation)) {
+          mIrClassWithAnnotation.add(irClass to it)
+        }
+      }
+    }
+  }
+  
+  @Suppress("UNCHECKED_CAST")
+  override fun IrBlockBodyBuilder.generateCode(
+    pluginContext: IrPluginContext,
+    moduleFragment: IrModuleFragment,
+    initImplFunction: IrSimpleFunction,
+    ktProviderInitializer: IrClassSymbol,
+    ktProviderInitializerImpl: IrClass
+  ) {
     val superClassFunction = ktProviderInitializer.owner
       .functions
       .single {
         it.name.asString() == "addKClassProvider"
       }
-    addKClassProviderFunction = ktProviderInitializerImpl.functions
+    val addKClassProviderFunction = ktProviderInitializerImpl.functions
       .single {
         it.overrides(superClassFunction)
       }
-  }
-  
-  override fun IrBlockBodyBuilder.processInitImplFunction(
-    pluginContext: IrPluginContext,
-    initImplFunction: IrSimpleFunction,
-    descriptor: ClassDescriptor
-  ) {
-    val kind = descriptor.kind
-    if (kind.isClass || kind.isInterface || kind.isObject) {
-      descriptor.annotations
-        .filter { it.fqName == kClassProviderAnnotation }
-        .forEach {
-          val classId = descriptor.classId!!
-          val location = classId.asFqNameString()
-          val name = it.allValueArguments[nameArg]?.value as String?
-          val key = getKey(descriptor, name)
-          putAndCheckUniqueKClassKey(key, location)
-          messageCollector.log("@KClassProvider: $location")
-          val classSymbol = pluginContext.referenceClass(classId)!!
-          +irAddKClassProvider(pluginContext, key, classSymbol, initImplFunction)
-        }
+    mIrClassWithAnnotation.forEach { pair ->
+      val irClass = pair.first
+      val annotation = pair.second
+      val name = (annotation.getValueArgument(0) as IrConst<String>).value
+      val key = getKey(irClass, name)
+      putAndCheckUniqueKClassKey(key, irClass.location)
+      messageCollector.log("@KClassProvider: $irClass.location")
+      +irAddKClassProvider(pluginContext, key, irClass.symbol, initImplFunction, addKClassProviderFunction)
     }
   }
   
@@ -88,6 +91,7 @@ class KClassProviderHandler : ProviderHandler {
     key: String,
     classSymbol: IrClassSymbol,
     initImplFunction: IrSimpleFunction,
+    addKClassProviderFunction: IrSimpleFunction,
   ): IrExpression {
     return irCall(addKClassProviderFunction).also { call ->
       call.dispatchReceiver = irGet(initImplFunction.dispatchReceiverParameter!!)
@@ -122,16 +126,16 @@ class KClassProviderHandler : ProviderHandler {
     }
   }
   
-  private fun getKey(descriptor: ClassDescriptor, name: String?): String {
+  private fun getKey(irClass: IrClass, name: String?): String {
     if (name == null) {
-      throw IllegalArgumentException("必须设置 name!   class=${descriptor.location}")
+      throw IllegalArgumentException("必须设置 name!   class=${irClass.location}")
     } else if (name.isEmpty()) {
-      throw IllegalArgumentException("name 不能为空串!   class=${descriptor.location}")
+      throw IllegalArgumentException("name 不能为空串!   class=${irClass.location}")
     }
     return name
   }
   
-  private val ClassDescriptor.location: String
+  private val IrClass.location: String
     get() = classId!!.asFqNameString()
   
   companion object {

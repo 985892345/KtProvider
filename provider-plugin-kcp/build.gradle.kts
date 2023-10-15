@@ -34,9 +34,7 @@ dependencies {
   compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable")
   compileOnly("com.google.auto.service:auto-service-annotations:1.0.1")
   kapt("com.google.auto.service:auto-service:1.0.1")
-  implementation("com.squareup:kotlinpoet:1.14.2") // https://square.github.io/kotlinpoet/
   
   testImplementation(kotlin("test"))
-  testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0")
+  testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0") // https://github.com/tschuchortdev/kotlin-compile-testing
 }
-

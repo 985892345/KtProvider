@@ -12,7 +12,7 @@ import kotlin.reflect.KClass
  * @author 985892345
  * 2023/6/14 11:37
  */
-interface KtProviderInitializer {
+interface IKtProviderInitializer {
   /**
    * 初始化方法，ir 插桩的地方
    * - 允许重写并添加自己的逻辑

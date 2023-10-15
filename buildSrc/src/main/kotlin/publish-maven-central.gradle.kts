@@ -1,6 +1,5 @@
 import org.gradle.kotlin.dsl.`maven-publish`
 import org.gradle.kotlin.dsl.signing
-import java.util.regex.Pattern.matches
 
 plugins {
   `maven-publish`
@@ -14,6 +13,11 @@ afterEvaluate {
   publishing {
     publications {
       val projectArtifactId = publish.artifactId
+      if (projectArtifactId.isEmpty()) {
+        throw IllegalArgumentException(
+          "artifactId 不能未空，请在 build.gradle.kts 中设置 plush.artifactId = \"...\""
+        )
+      }
       val projectGithubName = publish.githubName
       val projectDescription = publish.description
       val projectMainBranch = publish.mainBranch

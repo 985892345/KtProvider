@@ -11,19 +11,19 @@ import com.g985892345.provider.annotation.SingleImplProvider
  * @author 985892345
  * 2023/6/20 22:05
  */
-@NewImplProvider(clazz = ITestService::class)
-class TestServiceImpl : ITestService {
-  override fun get(): String {
-    return toString()
-  }
-}
-
 // @NewImplProvider(clazz = ITestService::class)
-// class TestServiceImpl2 : ITestService {
+// class TestServiceImpl : ITestService {
 //   override fun get(): String {
 //     return toString()
 //   }
 // }
+
+@NewImplProvider(clazz = ITestService::class)
+class TestServiceImpl3 : ITestService {
+  override fun get(): String {
+    return toString()
+  }
+}
 
 @SingleImplProvider(clazz = ITestService::class, "single")
 object SingleTestServiceImpl : ITestService {

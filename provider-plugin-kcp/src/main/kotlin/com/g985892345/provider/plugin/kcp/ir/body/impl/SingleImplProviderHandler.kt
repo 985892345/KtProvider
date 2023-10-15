@@ -8,8 +8,11 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -31,52 +34,72 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
  */
 class SingleImplProviderHandler(
   isCheckImpl: Boolean
-) : BaseImplProviderHandler(
-  "addSingleImplProvider",
-  isCheckImpl
-) {
+) : BaseImplProviderHandler(isCheckImpl) {
   
   private val singleImplProviderAnnotation = FqName("com.g985892345.provider.annotation.SingleImplProvider")
+  private val mIrClassWithAnnotation = mutableListOf<Pair<IrClass, IrConstructorCall>>()
   
-  override fun IrBlockBodyBuilder.processInitImplFunction(
-    pluginContext: IrPluginContext,
-    initImplFunction: IrSimpleFunction,
-    descriptor: ClassDescriptor
-  ) {
-    val kind = descriptor.kind
-    val modality = descriptor.modality
-    // 筛选抽象 class 和 object
+  override fun selectIrClass(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment, irClass: IrClass) {
+    val kind = irClass.kind
+    val modality = irClass.modality
+    // 普通 class 和 object 单例
     if (kind.isClass && (modality == Modality.OPEN || modality == Modality.FINAL) || kind.isObject) {
-      // 遍历所有注解
-      descriptor.annotations
-        .filter { it.fqName == singleImplProviderAnnotation }
-        .forEach { annotation ->
-          checkEmptyConstructor(descriptor)
-          val arg = getImplProviderArg(pluginContext, descriptor, annotation)
-          val implSymbol = pluginContext.referenceClass(descriptor.classId!!)!!
-          checkImpl(implSymbol, arg.clazzSymbol)
-          messageCollector.log("@SingleImplProvider: ${descriptor.location} -> (${arg.msg})")
-          +irAddSingleImplProvider(pluginContext, arg, implSymbol, initImplFunction)
+      messageCollector.log("selectIrClass: irClass = ${irClass.classId?.asFqNameString()}")
+      irClass.annotations.forEach {
+        if (it.isAnnotation(singleImplProviderAnnotation)) {
+          messageCollector.log("selectIrClass: irClass = ${irClass.classId?.asFqNameString()}, annotation = ${it.dump()}")
+          mIrClassWithAnnotation.add(irClass to it)
         }
+      }
+    }
+  }
+  
+  override fun IrBlockBodyBuilder.generateCode(
+    pluginContext: IrPluginContext,
+    moduleFragment: IrModuleFragment,
+    initImplFunction: IrSimpleFunction,
+    ktProviderInitializer: IrClassSymbol,
+    ktProviderInitializerImpl: IrClass
+  ) {
+    messageCollector.log("generateCode")
+    val superClassFunction = ktProviderInitializer.owner
+      .functions
+      .single {
+        it.name.asString() == "addSingleImplProvider"
+      }
+    val implProviderFunction = ktProviderInitializerImpl.functions
+      .single {
+        it.overrides(superClassFunction)
+      }
+    mIrClassWithAnnotation.forEach { pair ->
+      val irClass = pair.first
+      val annotation = pair.second
+      messageCollector.log("generateCode: irClass = ${irClass.location}, annotation = ${annotation.dump()}")
+      checkEmptyConstructor(irClass)
+      val arg = getImplProviderArg(irClass, annotation)
+      checkImpl(irClass, arg.classReference)
+      messageCollector.log("@SingleImplProvider: ${irClass.location} -> (${arg.msg})")
+      +irAddSingleImplProvider(pluginContext, arg, irClass, initImplFunction, implProviderFunction)
     }
   }
   
   private fun IrBuilderWithScope.irAddSingleImplProvider(
     pluginContext: IrPluginContext,
     arg: ImplProviderArg,
-    classSymbol: IrClassSymbol,
+    irClass: IrClass,
     initImplFunction: IrSimpleFunction,
+    implProviderFunction: IrSimpleFunction
   ): IrExpression {
     return irCall(implProviderFunction).also { call ->
       call.dispatchReceiver = irGet(initImplFunction.dispatchReceiverParameter!!)
       // 添加 KClass 参数
       call.putValueArgument(
         0,
-        IrClassReferenceImpl(
+        arg.classReference ?: IrClassReferenceImpl(
           startOffset, endOffset,
           context.irBuiltIns.kClassClass.starProjectedType,
           context.irBuiltIns.kClassClass,
-          (arg.clazzSymbol ?: nothingSymbol).defaultType // clazzSymbol 为 null 时默认填充 Nothing::class，因为 Nothing 无实现类
+          nothingSymbol.defaultType // clazzSymbol 为 null 时默认填充 Nothing::class，因为 Nothing 无实现类
         )
       )
       // 添加 name 参数
@@ -96,10 +119,10 @@ class SingleImplProviderHandler(
             lambda.setDeclarationsParent(initImplFunction)
             lambda.body = DeclarationIrBuilder(pluginContext, lambda.symbol).irBlockBody {
               +irReturn(
-                if (classSymbol.owner.isObject) {
-                  irGetObject(classSymbol)
+                if (irClass.isObject) {
+                  irGetObject(irClass.symbol)
                 } else {
-                  irCall(classSymbol.owner.constructors.single { it.valueParameters.isEmpty() })
+                  irCall(irClass.constructors.single { it.valueParameters.isEmpty() })
                 }
               )
             }

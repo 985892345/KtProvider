@@ -1,6 +1,7 @@
 package com.g985892345.provider.plugin.gradle
 
 import com.g985892345.provider.plugin.gradle.extensions.KtProviderExtensions
+import com.g985892345.provider.plugin.gradle.generator.KtProviderInitializerGenerator
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -19,19 +20,26 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
   override fun apply(target: Project) {
     super.apply(target)
     target.extensions.create("ktProvider", KtProviderExtensions::class.java, target)
+    KtProviderInitializerGenerator(target).config()
+    // 添加对 IKtProviderInitializer 的依赖
+    target.dependencies.add(
+      "implementation",
+      "io.github.985892345:provider-init:${BuildConfig.VERSION}"
+    )
+    // 添加对 IKtProviderInitializer 的依赖
+    target.dependencies.add(
+      "implementation",
+      "io.github.985892345:provider-annotation:${BuildConfig.VERSION}"
+    )
   }
   
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
     val project = kotlinCompilation.target.project
-    val ktProviderExtensions = project.extensions.getByType(KtProviderExtensions::class.java)
-    val isCheckImpl = ktProviderExtensions.isCheckImpl.toString()
-    val nameMatcher = ktProviderExtensions.packageNameManager.nameMatcher
+    val ktProviderExtension = project.extensions.getByType(KtProviderExtensions::class.java)
+    val isCheckImpl = ktProviderExtension.isCheckImpl.toString()
     return project.provider {
       mutableListOf<SubpluginOption>().apply {
         add(SubpluginOption("isCheckImpl", isCheckImpl))
-        if (nameMatcher.isNotEmpty()) {
-          add(SubpluginOption("package", nameMatcher.joinToString("&")))
-        }
       }
     }
   }

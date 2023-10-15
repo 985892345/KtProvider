@@ -18,6 +18,7 @@
             <option value="$PROJECT_DIR$/sample/kotlin-jvm" />
             <option value="$PROJECT_DIR$/sample/kotlin-jvm/api" />
             <option value="$PROJECT_DIR$/sample/kotlin-jvm/impl" />
+            <option value="$PROJECT_DIR$/sample/kotlin-jvm/impl2" />
             <option value="$PROJECT_DIR$/sample/kotlin-jvm/module" />
           </set>
         </option>
