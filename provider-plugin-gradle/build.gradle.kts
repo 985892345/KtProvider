@@ -1,6 +1,6 @@
 plugins {
   kotlin("jvm")
-  id("com.gradle.plugin-publish") version "1.2.0" // https://plugins.gradle.org/docs/publish-plugin
+  id("com.gradle.plugin-publish") version "1.2.1" // https://plugins.gradle.org/docs/publish-plugin
   id("com.github.gmazzo.buildconfig")
 }
 
@@ -26,20 +26,17 @@ buildConfig {
 }
 
 gradlePlugin {
+  website.set("https://github.com/985892345/KtProvider")
+  vcsUrl.set("https://github.com/985892345/KtProvider")
   plugins {
     create("KtProvider") {
       id = "io.github.985892345.KtProvider"
       implementationClass = "com.g985892345.provider.plugin.gradle.KtProviderGradlePlugin"
       displayName = "服务提供插件"
       description = "本插件使用 Kotlin Compiler Plugin 进行 IR 插桩，实现服务提供"
+      tags.set(listOf("kotlin Multiplatform", "Kotlin Compiler Plugin", "Service Provider"))
     }
   }
-}
-
-pluginBundle {
-  website = "https://github.com/985892345/KtProvider"
-  vcsUrl = "https://github.com/985892345/KtProvider"
-  tags = listOf("kotlin Multiplatform", "Kotlin Compiler Plugin", "Service Provider")
 }
 
 publishing {

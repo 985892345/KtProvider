@@ -1,6 +1,6 @@
 package com.g985892345.provider.manager
 
-import com.g985892345.provider.init.IKtProviderInitializer
+import com.g985892345.provider.init.KtProviderInitializer
 import kotlin.reflect.KClass
 
 /**
@@ -68,7 +68,8 @@ object KtProviderManager {
   /**
    * 返回 [name] 对应的 KClass
    */
-  fun <T : Any> getKClassOrNull(name: String): KClass<out T>? = IKtProviderInitializer.KClassProviderMap[name]?.get()
+  fun <T : Any> getKClassOrNull(name: String): KClass<out T>? =
+    KtProviderInitializer.KClassProviderMap[name]?.get()
 
   /**
    * 返回 [name] 对应的 KClass
@@ -83,7 +84,7 @@ object KtProviderManager {
   @Suppress("UNCHECKED_CAST")
   fun <T : Any> getAllNewImpl(clazz: KClass<T>): Map<String, () -> T> {
     // todo 目前 Kotlin/Js 不支持类实现 () -> Any 接口，暂时通过转换解决
-    return IKtProviderInitializer.NewImplProviderMap[clazz]
+    return KtProviderInitializer.NewImplProviderMap[clazz]
       ?.mapValues { { it.value.newInstance() as T } }
       ?: emptyMap()
   }
@@ -95,7 +96,7 @@ object KtProviderManager {
   @Suppress("UNCHECKED_CAST")
   fun <T : Any> getAllSingleImpl(clazz: KClass<T>): Map<String, () -> T> {
     // todo 目前 Kotlin/Js 不支持类实现 () -> Any 接口，暂时通过转换解决
-    return IKtProviderInitializer.SingleImplProviderMap[clazz]
+    return KtProviderInitializer.SingleImplProviderMap[clazz]
       ?.mapValues { { it.value.getInstance() as T } }
       ?: emptyMap()
   }
@@ -112,11 +113,11 @@ object KtProviderManager {
     val clazz2 = clazz ?: Nothing::class
     return when (singleton) {
       null -> {
-        IKtProviderInitializer.SingleImplProviderMap[clazz2]?.get(name)?.getInstance() as T?
-          ?: IKtProviderInitializer.NewImplProviderMap[clazz2]?.get(name)?.newInstance() as T?
+        KtProviderInitializer.SingleImplProviderMap[clazz2]?.get(name)?.getInstance() as T?
+          ?: KtProviderInitializer.NewImplProviderMap[clazz2]?.get(name)?.newInstance() as T?
       }
-      true -> IKtProviderInitializer.SingleImplProviderMap[clazz2]?.get(name)?.getInstance() as T?
-      false -> IKtProviderInitializer.NewImplProviderMap[clazz2]?.get(name)?.newInstance() as T?
+      true -> KtProviderInitializer.SingleImplProviderMap[clazz2]?.get(name)?.getInstance() as T?
+      false -> KtProviderInitializer.NewImplProviderMap[clazz2]?.get(name)?.newInstance() as T?
     }
   }
 }

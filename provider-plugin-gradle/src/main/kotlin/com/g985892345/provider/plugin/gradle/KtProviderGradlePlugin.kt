@@ -21,16 +21,6 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
     super.apply(target)
     target.extensions.create("ktProvider", KtProviderExtensions::class.java, target)
     KtProviderInitializerGenerator(target).config()
-    // 添加对 IKtProviderInitializer 的依赖
-    target.dependencies.add(
-      "implementation",
-      "io.github.985892345:provider-init:${BuildConfig.VERSION}"
-    )
-    // 添加对 IKtProviderInitializer 的依赖
-    target.dependencies.add(
-      "implementation",
-      "io.github.985892345:provider-annotation:${BuildConfig.VERSION}"
-    )
   }
   
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
@@ -57,6 +47,8 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
   }
   
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
-    return true
+    val project = kotlinCompilation.target.project
+    val ktProviderExtension = project.extensions.getByType(KtProviderExtensions::class.java)
+    return ktProviderExtension.isApplyKcp
   }
 }

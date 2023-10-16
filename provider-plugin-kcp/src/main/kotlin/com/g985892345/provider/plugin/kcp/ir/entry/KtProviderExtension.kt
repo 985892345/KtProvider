@@ -1,4 +1,4 @@
-package com.g985892345.provider.plugin.kcp.ir.base
+package com.g985892345.provider.plugin.kcp.ir.entry
 
 import com.g985892345.provider.plugin.kcp.ir.body.kclass.KClassProviderHandler
 import com.g985892345.provider.plugin.kcp.ir.body.impl.NewImplProviderHandler
@@ -8,11 +8,8 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
-import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -20,10 +17,8 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 
@@ -47,8 +42,8 @@ class KtProviderExtension(
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     log("KtProvider init")
     val ktProviderInitializerClassId =
-      ClassId(FqName("com.g985892345.provider.init"), FqName("IKtProviderInitializer"), false)
-    // IKtProviderInitializer 接口
+      ClassId(FqName("com.g985892345.provider.init"), FqName("KtProviderInitializer"), false)
+    // KtProviderInitializer 声明
     val ktProviderInitializerSymbol = pluginContext.referenceClass(ktProviderInitializerClassId)!!
     // 初始化所有 handler
     handlers.forEach {

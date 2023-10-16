@@ -1,4 +1,4 @@
-package com.g985892345.provider.plugin.kcp.ir.base
+package com.g985892345.provider.plugin.kcp.ir.entry
 
 import com.g985892345.provider.plugin.kcp.KtProviderGradlePlugin
 import com.google.auto.service.AutoService

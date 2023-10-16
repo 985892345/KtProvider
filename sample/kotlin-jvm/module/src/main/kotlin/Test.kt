@@ -1,4 +1,4 @@
-import com.g985892345.provider.KtProvider.sample.kotlinjvm.module.ModuleKtProviderInitializer
+import com.g985892345.provider.ktprovider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
 
 /**

@@ -40,8 +40,8 @@ interface ProviderHandler {
    * 生成代码时回调
    *
    * @param initImplFunction _initImpl 方法
-   * @param ktProviderInitializer IKtProviderInitializer 接口
-   * @param ktProviderInitializerImpl IKtProviderInitializer 接口的实现类
+   * @param ktProviderInitializer KtProviderInitializer
+   * @param ktProviderInitializerImpl KtProviderInitializer 的实现类
    */
   fun IrBlockBodyBuilder.generateCode(
     pluginContext: IrPluginContext,

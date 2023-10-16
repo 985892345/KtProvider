@@ -1,8 +1,8 @@
 pluginManagement {
   repositories {
+    mavenLocal()
     mavenCentral()
     gradlePluginPortal()
-    mavenLocal()
     // mavenCentral 快照仓库
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }

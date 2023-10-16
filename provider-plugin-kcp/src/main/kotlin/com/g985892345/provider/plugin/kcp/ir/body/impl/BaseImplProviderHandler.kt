@@ -107,7 +107,7 @@ abstract class BaseImplProviderHandler(
     fun putAndCheckUniqueImplKey(key: String, locationMsg: String) {
       val lastLocationMsg = UniqueKey[key]
       if (lastLocationMsg != null) {
-        throw IllegalArgumentException("包含重复的申明: $key\n位置1: $lastLocationMsg\n位置2: $locationMsg")
+        throw IllegalArgumentException("包含重复的声明: $key\n位置1: $lastLocationMsg\n位置2: $locationMsg")
       } else {
         UniqueKey[key] = locationMsg
       }
