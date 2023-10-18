@@ -19,6 +19,13 @@ abstract class KtProviderExtensions(private val project: Project) {
   var isApplyKcp = true
   
   /**
+   * ir 插桩后的缓存信息，用于保存开启增量编译后需要编译信息
+   */
+  var cachePath = project.layout.buildDirectory.dir(
+    "generated/source/ktProvider/cache"
+  )
+  
+  /**
    * 是否检查被注解类是注解中标注参数的实现类
    * ```
    * 比如：
@@ -33,7 +40,7 @@ abstract class KtProviderExtensions(private val project: Project) {
   /**
    * 自动生成的 KtProviderInitializer 实现类名字
    */
-  var initializerClassName = "${project.name.capitalized()}KtProviderInitializer"
+  var initializerClassName = getInitializerClassNameByProject()
   
   /**
    * 自动生成的 KtProviderInitializer 实现类包名
@@ -75,16 +82,22 @@ abstract class KtProviderExtensions(private val project: Project) {
     }
   }
   
+  private fun getInitializerClassNameByProject(): String {
+    return project.name
+      .split(Regex("[^0-9a-zA-Z]"))
+      .joinToString("") { it.capitalized() } + "KtProviderInitializer"
+  }
+  
   private fun getInitializerClassPackageByProject(): String {
     val prefix = "com.g985892345.provider."
     var name = project.name
     var p = project
     while (p.parent != null) {
       p = p.parent!!
-      val projectNamePackage = p.name.replace(Regex("[^0-9a-zA-Z]"), "")
+      val projectNamePackage = p.name
       name = "${projectNamePackage}.$name"
     }
-    name = name.lowercase()
+    name = name.lowercase().replace(Regex("[^0-9a-zA-Z.]"), "")
     return prefix + name
   }
   

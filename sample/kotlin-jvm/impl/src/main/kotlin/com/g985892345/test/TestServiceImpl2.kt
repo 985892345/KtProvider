@@ -14,7 +14,7 @@ import com.g985892345.provider.annotation.SingleImplProvider
 object TestServiceImpl2 : ITestService2 {
 }
 
-@SingleImplProvider(ITestService::class, "123")
+@SingleImplProvider(ITestService::class, "333")
 object TestServiceImpl4 : ITestService {
   override fun get(): String {
     return "get"

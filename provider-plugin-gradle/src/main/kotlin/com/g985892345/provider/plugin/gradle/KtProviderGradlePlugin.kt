@@ -30,6 +30,7 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider {
       mutableListOf<SubpluginOption>().apply {
         add(SubpluginOption("isCheckImpl", isCheckImpl))
+        add(SubpluginOption("cachePath", ktProviderExtension.cachePath.get().asFile.path))
       }
     }
   }

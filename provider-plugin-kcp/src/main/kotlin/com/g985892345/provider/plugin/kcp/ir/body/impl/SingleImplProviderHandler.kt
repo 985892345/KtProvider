@@ -1,9 +1,11 @@
 package com.g985892345.provider.plugin.kcp.ir.body.impl
 
+import com.g985892345.provider.plugin.kcp.cache.ClassIdCacheManager
+import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
+import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.*
@@ -22,6 +24,7 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
@@ -33,23 +36,43 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
  * 2023/6/15 15:48
  */
 class SingleImplProviderHandler(
-  isCheckImpl: Boolean
-) : BaseImplProviderHandler(isCheckImpl) {
+  data: KtProviderData
+) : BaseImplProviderHandler(data) {
+  
+  private val mClassIdCache = ClassIdCacheManager(
+    data.cacheManagerDir.resolveFile("SingleImplProviderCache.json")
+  )
   
   private val singleImplProviderAnnotation = FqName("com.g985892345.provider.annotation.SingleImplProvider")
-  private val mIrClassWithAnnotation = mutableListOf<Pair<IrClass, IrConstructorCall>>()
+  private val mIrClassWithAnnotation = LinkedHashMap<ClassId, Pair<IrClass, List<IrConstructorCall>>>()
+  
+  override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
+    super.init(pluginContext, moduleFragment)
+    mIrClassWithAnnotation.clear()
+    // 加载缓存
+    mClassIdCache.get()
+      .mapNotNull { pluginContext.referenceClass(it) }
+      .forEach {
+        messageCollector.log("SingleImplProviderCache: class=${it.owner.location}")
+        selectIrClass(pluginContext, moduleFragment, it.owner)
+      }
+  }
   
   override fun selectIrClass(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment, irClass: IrClass) {
+    val classId = irClass.classId ?: return
     val kind = irClass.kind
     val modality = irClass.modality
     // 普通 class 和 object 单例
     if (kind.isClass && (modality == Modality.OPEN || modality == Modality.FINAL) || kind.isObject) {
-      messageCollector.log("selectIrClass: irClass = ${irClass.classId?.asFqNameString()}")
-      irClass.annotations.forEach {
-        if (it.isAnnotation(singleImplProviderAnnotation)) {
-          messageCollector.log("selectIrClass: irClass = ${irClass.classId?.asFqNameString()}, annotation = ${it.dump()}")
-          mIrClassWithAnnotation.add(irClass to it)
-        }
+      val annotations = irClass.annotations.mapNotNull {
+        if (it.isAnnotation(singleImplProviderAnnotation)) it else null
+      }
+      if (annotations.isNotEmpty()) {
+        // 如果 classId 相同，这里会覆盖掉缓存
+        mIrClassWithAnnotation[classId] = irClass to annotations
+      } else {
+        // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
+        mIrClassWithAnnotation.remove(classId)
       }
     }
   }
@@ -71,16 +94,23 @@ class SingleImplProviderHandler(
       .single {
         it.overrides(superClassFunction)
       }
-    mIrClassWithAnnotation.forEach { pair ->
-      val irClass = pair.first
-      val annotation = pair.second
-      messageCollector.log("generateCode: irClass = ${irClass.location}, annotation = ${annotation.dump()}")
-      checkEmptyConstructor(irClass)
-      val arg = getImplProviderArg(irClass, annotation)
-      checkImpl(irClass, arg.classReference)
-      messageCollector.log("@SingleImplProvider: ${irClass.location} -> (${arg.msg})")
-      +irAddSingleImplProvider(pluginContext, arg, irClass, initImplFunction, implProviderFunction)
+    mIrClassWithAnnotation.forEach { entry ->
+      val irClass = entry.value.first
+      entry.value.second.forEach { annotation ->
+        checkEmptyConstructor(irClass)
+        val arg = getImplProviderArg(irClass, annotation)
+        checkImpl(irClass, arg.classReference)
+        messageCollector.log("@SingleImplProvider: ${irClass.location} -> (${arg.msg})")
+        +irAddSingleImplProvider(pluginContext, arg, irClass, initImplFunction, implProviderFunction)
+      }
     }
+    
+    // 保存进缓存
+    mClassIdCache.put(
+      mIrClassWithAnnotation.mapNotNullTo(hashSetOf()) {
+        it.key
+      }
+    )
   }
   
   private fun IrBuilderWithScope.irAddSingleImplProvider(

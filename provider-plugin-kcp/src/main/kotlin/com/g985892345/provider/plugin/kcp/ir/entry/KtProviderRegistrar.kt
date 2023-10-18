@@ -1,6 +1,7 @@
 package com.g985892345.provider.plugin.kcp.ir.entry
 
 import com.g985892345.provider.plugin.kcp.KtProviderGradlePlugin
+import com.g985892345.provider.plugin.kcp.cache.CacheManagerDir
 import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -22,8 +23,17 @@ class KtProviderRegistrar : CompilerPluginRegistrar() {
     get() = true
   
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    val message = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
-    val isCheckImpl = configuration.get(KtProviderGradlePlugin.ARG_IS_CHECK_IMPL) ?: true
-    IrGenerationExtension.registerExtension(KtProviderExtension(message, isCheckImpl))
+    IrGenerationExtension.registerExtension(
+      KtProviderExtension(
+        KtProviderData(
+          configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE),
+          configuration.get(KtProviderGradlePlugin.ARG_IS_CHECK_IMPL) ?: true,
+          configuration.get(KtProviderGradlePlugin.ARG_CACHE_PATH)?.let {
+            it.mkdirs()
+            CacheManagerDir(it)
+          } ?: throw IllegalStateException("未设置 cachePath"),
+        )
+      )
+    )
   }
 }

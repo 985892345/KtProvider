@@ -3,11 +3,11 @@ package com.g985892345.provider.plugin.kcp.ir.entry
 import com.g985892345.provider.plugin.kcp.ir.body.kclass.KClassProviderHandler
 import com.g985892345.provider.plugin.kcp.ir.body.impl.NewImplProviderHandler
 import com.g985892345.provider.plugin.kcp.ir.body.impl.SingleImplProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.builders.*
@@ -29,14 +29,13 @@ import org.jetbrains.kotlin.name.FqName
  * 2023/6/13 23:08
  */
 class KtProviderExtension(
-  private val message: MessageCollector,
-  private val isCheckImpl: Boolean,
+  private val data: KtProviderData
 ) : IrGenerationExtension {
   
   private val handlers = listOf(
-    SingleImplProviderHandler(isCheckImpl),
-    NewImplProviderHandler(isCheckImpl),
-    KClassProviderHandler(),
+    SingleImplProviderHandler(data),
+    NewImplProviderHandler(data),
+    KClassProviderHandler(data),
   )
   
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
@@ -47,13 +46,13 @@ class KtProviderExtension(
     val ktProviderInitializerSymbol = pluginContext.referenceClass(ktProviderInitializerClassId)!!
     // 初始化所有 handler
     handlers.forEach {
-      it.init(pluginContext, moduleFragment, message)
+      it.init(pluginContext, moduleFragment)
     }
     moduleFragment.files.forEach { irFile ->
       irFile.acceptChildrenVoid(object : IrElementVisitorVoid {
         override fun visitClass(declaration: IrClass) {
           super.visitClass(declaration)
-          log("class = ${declaration.classId?.asFqNameString()}")
+          log("class = ${declaration.location}")
           handlers.forEach {
             it.selectIrClass(pluginContext, moduleFragment, declaration)
           }
@@ -147,6 +146,6 @@ class KtProviderExtension(
   }
   
   private fun log(mes: String?) {
-    message.log(mes ?: "null")
+    data.message.log(mes ?: "null")
   }
 }

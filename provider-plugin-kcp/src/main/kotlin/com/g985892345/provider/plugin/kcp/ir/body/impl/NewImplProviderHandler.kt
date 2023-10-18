@@ -1,5 +1,8 @@
 package com.g985892345.provider.plugin.kcp.ir.body.impl
 
+import com.g985892345.provider.plugin.kcp.cache.ClassIdCacheManager
+import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
+import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -20,6 +23,7 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -30,21 +34,43 @@ import org.jetbrains.kotlin.name.Name
  * 2023/6/15 14:57
  */
 class NewImplProviderHandler(
-  isCheckImpl: Boolean
-) : BaseImplProviderHandler(isCheckImpl) {
+  data: KtProviderData
+) : BaseImplProviderHandler(data) {
+  
+  private val mClassIdCache = ClassIdCacheManager(
+    data.cacheManagerDir.resolveFile("NewImplProviderCache.json")
+  )
   
   private val newImplProviderAnnotation = FqName("com.g985892345.provider.annotation.NewImplProvider")
-  private val mIrClassWithAnnotation = mutableListOf<Pair<IrClass, IrConstructorCall>>()
+  private val mIrClassWithAnnotation = LinkedHashMap<ClassId, Pair<IrClass, List<IrConstructorCall>>>()
+  
+  override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
+    super.init(pluginContext, moduleFragment)
+    mIrClassWithAnnotation.clear()
+    // 加载缓存
+    mClassIdCache.get()
+      .mapNotNull { pluginContext.referenceClass(it) }
+      .forEach {
+        messageCollector.log("NewImplProviderCache: class=${it.owner.location}")
+        selectIrClass(pluginContext, moduleFragment, it.owner)
+      }
+  }
   
   override fun selectIrClass(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment, irClass: IrClass) {
+    val classId = irClass.classId ?: return
     val kind = irClass.kind
     val modality = irClass.modality
     // 普通 class
     if (kind.isClass && (modality == Modality.OPEN || modality == Modality.FINAL)) {
-      irClass.annotations.forEach {
-        if (it.isAnnotation(newImplProviderAnnotation)) {
-          mIrClassWithAnnotation.add(irClass to it)
-        }
+      val annotations = irClass.annotations.mapNotNull {
+        if (it.isAnnotation(newImplProviderAnnotation)) it else null
+      }
+      if (annotations.isNotEmpty()) {
+        // 如果 classId 相同，这里会覆盖掉缓存
+        mIrClassWithAnnotation[classId] = irClass to annotations
+      } else {
+        // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
+        mIrClassWithAnnotation.remove(classId)
       }
     }
   }
@@ -65,17 +91,25 @@ class NewImplProviderHandler(
       .single {
         it.overrides(superClassFunction)
       }
-    mIrClassWithAnnotation.forEach { pair ->
-      val irClass = pair.first
-      val annotation = pair.second
-      checkEmptyConstructor(irClass)
-      val arg = getImplProviderArg(irClass, annotation)
-      checkImpl(irClass, arg.classReference)
-      messageCollector.log("@NewImplProvider: ${irClass.location} -> (${arg.msg})")
-      val irConstructor = irClass.constructors
-        .single { it.valueParameters.isEmpty() }
-      +irAddNewImplProvider(pluginContext, arg, irConstructor, initImplFunction, implProviderFunction)
+    mIrClassWithAnnotation.forEach { entry ->
+      val irClass = entry.value.first
+      entry.value.second.forEach { annotation ->
+        checkEmptyConstructor(irClass)
+        val arg = getImplProviderArg(irClass, annotation)
+        checkImpl(irClass, arg.classReference)
+        messageCollector.log("@NewImplProvider: ${irClass.location} -> (${arg.msg})")
+        val irConstructor = irClass.constructors
+          .single { it.valueParameters.isEmpty() }
+        +irAddNewImplProvider(pluginContext, arg, irConstructor, initImplFunction, implProviderFunction)
+      }
     }
+    
+    // 保存进缓存
+    mClassIdCache.put(
+      mIrClassWithAnnotation.mapNotNullTo(hashSetOf()) {
+        it.key
+      }
+    )
   }
   
   private fun IrBuilderWithScope.irAddNewImplProvider(

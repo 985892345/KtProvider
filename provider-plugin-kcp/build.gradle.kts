@@ -1,6 +1,7 @@
 plugins {
   kotlin("jvm")
   kotlin("kapt")
+  kotlin("plugin.serialization")
   id("publish-maven-central")
   id("com.github.gmazzo.buildconfig")
 }
@@ -34,6 +35,7 @@ dependencies {
   compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable")
   compileOnly("com.google.auto.service:auto-service-annotations:1.0.1")
   kapt("com.google.auto.service:auto-service:1.0.1")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
   
   testImplementation(kotlin("test"))
   testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0") // https://github.com/tschuchortdev/kotlin-compile-testing

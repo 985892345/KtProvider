@@ -1,9 +1,10 @@
 package com.g985892345.provider.plugin.kcp.ir.body.impl
 
 import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
+import com.g985892345.provider.plugin.kcp.ir.utils.location
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.jvm.ir.getValueArgument
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
@@ -24,20 +25,18 @@ import org.jetbrains.kotlin.name.Name
  * 2023/7/21 22:38
  */
 abstract class BaseImplProviderHandler(
-  val isCheckImpl: Boolean
+  val data: KtProviderData
 ) : ProviderHandler {
   
   protected val clazzArg = Name.identifier("clazz")
   protected val nameArg = Name.identifier("name")
-  protected lateinit var messageCollector: MessageCollector
+  protected val messageCollector = data.message
   protected lateinit var nothingSymbol: IrClassSymbol
   
   override fun init(
     pluginContext: IrPluginContext,
     moduleFragment: IrModuleFragment,
-    messageCollector: MessageCollector
   ) {
-    this.messageCollector = messageCollector
     nothingSymbol =
       pluginContext.referenceClass(ClassId(FqName("kotlin"), FqName("Nothing"), false))!!
   }
@@ -50,7 +49,7 @@ abstract class BaseImplProviderHandler(
   
   // 检查被注解类是否是 clazz 参数的实现类
   protected fun checkImpl(irClass: IrClass, classReference: IrClassReference?) {
-    if (!isCheckImpl) return
+    if (!data.isCheckImpl) return
     if (classReference == null) return
     // 这里是获取注解中 clazz 参数表示的 IrClass 对象，不应该会出现空
     val classReferenceIrClass = classReference.classType.getClass()!!
@@ -83,9 +82,6 @@ abstract class BaseImplProviderHandler(
     putAndCheckUniqueImplKey(arg.msg, location)
     return arg
   }
-  
-  protected val IrClass.location: String
-    get() = classId!!.asFqNameString()
   
   protected data class ImplProviderArg(
     val classReference: IrClassReference?,

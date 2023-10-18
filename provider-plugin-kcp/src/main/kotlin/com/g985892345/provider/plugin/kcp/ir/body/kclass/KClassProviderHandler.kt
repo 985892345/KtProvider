@@ -1,10 +1,12 @@
 package com.g985892345.provider.plugin.kcp.ir.body.kclass
 
+import com.g985892345.provider.plugin.kcp.cache.ClassIdCacheManager
 import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
+import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
@@ -24,9 +26,9 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 
 /**
  * .
@@ -34,26 +36,41 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
  * @author 985892345
  * 2023/6/15 15:53
  */
-class KClassProviderHandler : ProviderHandler {
+class KClassProviderHandler(
+  data: KtProviderData
+) : ProviderHandler {
+  
+  private val mClassIdCache = ClassIdCacheManager(
+    data.cacheManagerDir.resolveFile("KClassProviderCache.json")
+  )
   
   private val kClassProviderAnnotation = FqName("com.g985892345.provider.annotation.KClassProvider")
-  private val mIrClassWithAnnotation = mutableListOf<Pair<IrClass, IrConstructorCall>>()
-  private lateinit var messageCollector: MessageCollector
+  private val mIrClassWithAnnotation = LinkedHashMap<ClassId, Pair<IrClass, List<IrConstructorCall>>>()
+  private val messageCollector = data.message
   
-  override fun init(
-    pluginContext: IrPluginContext,
-    moduleFragment: IrModuleFragment,
-    messageCollector: MessageCollector
-  ) {
-    this.messageCollector = messageCollector
+  override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
+    mIrClassWithAnnotation.clear()
+    // 加载缓存
+    mClassIdCache.get()
+      .mapNotNull { pluginContext.referenceClass(it) }
+      .forEach {
+        messageCollector.log("KClassProviderCache: class=${it.owner.location}")
+        selectIrClass(pluginContext, moduleFragment, it.owner)
+      }
   }
   
   override fun selectIrClass(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment, irClass: IrClass) {
+    val classId = irClass.classId ?: return
     if (irClass.isClass || irClass.isInterface || irClass.isObject) {
-      irClass.annotations.forEach {
-        if (it.isAnnotation(kClassProviderAnnotation)) {
-          mIrClassWithAnnotation.add(irClass to it)
-        }
+      val annotations = irClass.annotations.mapNotNull {
+        if (it.isAnnotation(kClassProviderAnnotation)) it else null
+      }
+      if (annotations.isNotEmpty()) {
+        // 如果 classId 相同，这里会覆盖掉缓存
+        mIrClassWithAnnotation[classId] = irClass to annotations
+      } else {
+        // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
+        mIrClassWithAnnotation.remove(classId)
       }
     }
   }
@@ -75,15 +92,23 @@ class KClassProviderHandler : ProviderHandler {
       .single {
         it.overrides(superClassFunction)
       }
-    mIrClassWithAnnotation.forEach { pair ->
-      val irClass = pair.first
-      val annotation = pair.second
-      val name = (annotation.getValueArgument(0) as IrConst<String>).value
-      val key = getKey(irClass, name)
-      putAndCheckUniqueKClassKey(key, irClass.location)
-      messageCollector.log("@KClassProvider: $irClass.location")
-      +irAddKClassProvider(pluginContext, key, irClass.symbol, initImplFunction, addKClassProviderFunction)
+    mIrClassWithAnnotation.forEach { entry ->
+      val irClass = entry.value.first
+      entry.value.second.forEach { annotation ->
+        val name = (annotation.getValueArgument(0) as IrConst<String>).value
+        val key = getKey(irClass, name)
+        putAndCheckUniqueKClassKey(key, irClass.location)
+        messageCollector.log("@KClassProvider: $irClass.location")
+        +irAddKClassProvider(pluginContext, key, irClass.symbol, initImplFunction, addKClassProviderFunction)
+      }
     }
+    
+    // 保存进缓存
+    mClassIdCache.put(
+      mIrClassWithAnnotation.mapNotNullTo(hashSetOf()) {
+        it.key
+      }
+    )
   }
   
   private fun IrBuilderWithScope.irAddKClassProvider(

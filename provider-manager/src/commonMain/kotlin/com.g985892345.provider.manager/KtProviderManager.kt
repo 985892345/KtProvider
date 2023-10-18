@@ -18,7 +18,10 @@ object KtProviderManager {
    * ## 注意
    * - name 不能为 空串
    *
-   * @param singleton false 时返回 @NewImplProvider 的实现类；true 时只返回 @SingleImplProvider 的实现类；null 时两者皆可
+   * @param singleton
+   * - false: 返回 @NewImplProvider 实现类；
+   * - true: 返回 @SingleImplProvider 实现类；
+   * - null: 优先返回 @SingleImplProvider，若无，则返回 @NewImplProvider
    * @throws IllegalArgumentException name 为空串时抛出非法参数错误
    */
   fun <T : Any> getImplOrNull(name: String, singleton: Boolean? = null): T? =
@@ -26,23 +29,34 @@ object KtProviderManager {
 
   /**
    * 返回只设置了对应 [clazz] 的实现类
-   * @param singleton false 时返回 @NewImplProvider 的实现类；true 时只返回 @SingleImplProvider 的实现类；null 时两者皆可
+   * @param singleton
+   * - false: 返回 @NewImplProvider 实现类；
+   * - true: 返回 @SingleImplProvider 实现类；
+   * - null: 优先返回 @SingleImplProvider，若无，则返回 @NewImplProvider
    */
   fun <T : Any> getImplOrNull(clazz: KClass<T>, singleton: Boolean? = null): T? =
     getImplOrNullInternal(clazz, "", singleton)
 
   /**
    * 返回设置了对应 [clazz] 和 [name] 的实现类
-   * @param singleton false 时返回 @NewImplProvider 的实现类；true 时只返回 @SingleImplProvider 的实现类；null 时两者皆可
+   * @param singleton
+   * - false: 返回 @NewImplProvider 实现类；
+   * - true: 返回 @SingleImplProvider 实现类；
+   * - null: 优先返回 @SingleImplProvider，若无，则返回 @NewImplProvider
+   * @throws IllegalArgumentException class 为 null 并且 name 为空串时抛出非法参数错误
    */
-  fun <T : Any> getImplOrNull(clazz: KClass<T>, name: String = "", singleton: Boolean? = null): T? =
+  fun <T : Any> getImplOrNull(clazz: KClass<T>?, name: String = "", singleton: Boolean? = null): T? =
     getImplOrNullInternal(clazz, name, singleton)
 
   /**
    * 返回只设置了对应 [name] 的实现类
    * ## 注意
-   *    * - name 不能为 空串
-   * @param singleton false 时返回 @NewImplProvider 的实现类；true 时只返回 @SingleImplProvider 的实现类；null 时两者皆可
+   * - name 不能为 空串
+   *
+   * @param singleton
+   * - false: 返回 @NewImplProvider 实现类；
+   * - true: 返回 @SingleImplProvider 实现类；
+   * - null: 优先返回 @SingleImplProvider，若无，则返回 @NewImplProvider
    * @throws NullPointerException 不存在时抛出空指针
    * @throws IllegalArgumentException name 为空串时抛出非法参数错误
    */
@@ -51,7 +65,10 @@ object KtProviderManager {
 
   /**
    * 返回只设置了对应 [clazz] 的实现类
-   * @param singleton false 时返回 @NewImplProvider 的实现类；true 时只返回 @SingleImplProvider 的实现类；null 时两者皆可
+   * @param singleton
+   * - false: 返回 @NewImplProvider 实现类；
+   * - true: 返回 @SingleImplProvider 实现类；
+   * - null: 优先返回 @SingleImplProvider，若无，则返回 @NewImplProvider
    * @throws NullPointerException 不存在时抛出空指针
    */
   fun <T : Any> getImplOrThrow(clazz: KClass<T>, singleton: Boolean? = null): T =
@@ -59,10 +76,14 @@ object KtProviderManager {
 
   /**
    * 返回设置了对应 [clazz] 和 [name] 的实现类
-   * @param singleton false 时返回 @NewImplProvider 的实现类；true 时只返回 @SingleImplProvider 的实现类；null 时两者皆可
+   * @param singleton
+   * - false: 返回 @NewImplProvider 实现类；
+   * - true: 返回 @SingleImplProvider 实现类；
+   * - null: 优先返回 @SingleImplProvider，若无，则返回 @NewImplProvider
    * @throws NullPointerException 不存在时抛出空指针
+   * @throws IllegalArgumentException class 为 null 并且 name 为空串时抛出非法参数错误
    */
-  fun <T : Any> getImplOrThrow(clazz: KClass<T>, name: String = "", singleton: Boolean? = null): T =
+  fun <T : Any> getImplOrThrow(clazz: KClass<T>?, name: String = "", singleton: Boolean? = null): T =
     getImplOrNull(clazz, name, singleton)!!
 
   /**
@@ -79,24 +100,24 @@ object KtProviderManager {
   
   /**
    * 获取 @NewImplProvider 中 clazz 参数为 [clazz] 的所有实现类
-   * @return 返回 () -> T 用于延迟初始化，每次调用都是新的实例
+   * @return 返回 () -> T 用于延迟初始化，每次 invoke 后都是新的实例
    */
   @Suppress("UNCHECKED_CAST")
-  fun <T : Any> getAllNewImpl(clazz: KClass<T>): Map<String, () -> T> {
+  fun <T : Any> getAllNewImpl(clazz: KClass<T>?): Map<String, () -> T> {
     // todo 目前 Kotlin/Js 不支持类实现 () -> Any 接口，暂时通过转换解决
-    return KtProviderInitializer.NewImplProviderMap[clazz]
+    return KtProviderInitializer.NewImplProviderMap[clazz ?: Nothing::class]
       ?.mapValues { { it.value.newInstance() as T } }
       ?: emptyMap()
   }
   
   /**
    * 获取 @SingleImplProvider 中 clazz 参数为 [clazz] 的所有实现类
-   * @return 返回 () -> T 用于延迟初始化，每次调用都是同一个实例
+   * @return 返回 () -> T 用于延迟初始化，每次 invoke 后都是同一个实例
    */
   @Suppress("UNCHECKED_CAST")
-  fun <T : Any> getAllSingleImpl(clazz: KClass<T>): Map<String, () -> T> {
+  fun <T : Any> getAllSingleImpl(clazz: KClass<T>?): Map<String, () -> T> {
     // todo 目前 Kotlin/Js 不支持类实现 () -> Any 接口，暂时通过转换解决
-    return KtProviderInitializer.SingleImplProviderMap[clazz]
+    return KtProviderInitializer.SingleImplProviderMap[clazz ?: Nothing::class]
       ?.mapValues { { it.value.getInstance() as T } }
       ?: emptyMap()
   }

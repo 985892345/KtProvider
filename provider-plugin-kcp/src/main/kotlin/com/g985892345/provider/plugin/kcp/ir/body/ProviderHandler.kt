@@ -1,7 +1,6 @@
 package com.g985892345.provider.plugin.kcp.ir.body
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -22,7 +21,6 @@ interface ProviderHandler {
   fun init(
     pluginContext: IrPluginContext,
     moduleFragment: IrModuleFragment,
-    messageCollector: MessageCollector,
   )
   
   /**

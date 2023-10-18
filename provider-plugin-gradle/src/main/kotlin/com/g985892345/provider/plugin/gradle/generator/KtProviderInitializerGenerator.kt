@@ -19,11 +19,22 @@ class KtProviderInitializerGenerator(
   val project: Project
 ) {
   
+  companion object {
+    /**
+     * 用于生成 KtProviderInitializer 实现类的 task 任务
+     */
+    fun getTaskName(project: Project): String {
+      val projectName = project.name.split(Regex("[^0-9a-zA-Z]"))
+        .joinToString("") { it.capitalized() }
+      return "generate${projectName}KtProviderInitializerImpl"
+    }
+  }
+  
   private val ktProviderSource = project.layout.buildDirectory.dir(
     "generated/source/ktProvider/${SourceSet.MAIN_SOURCE_SET_NAME}"
   )
   
-  private val taskName = "generate${project.name.capitalized()}KtProviderInitializerImpl"
+  private val taskName = getTaskName(project)
   
   fun config() {
     configDependencies()
@@ -50,17 +61,24 @@ class KtProviderInitializerGenerator(
     // 生成 KtProviderInitializer 的实现类
     return project.tasks.register(taskName) { task ->
       task.group = "ktProvider"
-      val initializerClassName = getInitializerClassName()
-      project.extensions.getByType(KotlinSourceSetContainer::class.java).sourceSets.forEach { sourceSet ->
-        // 该任务的缓存跟整个模块相关联，如果模块内代码有改动，则重新生成 KtProviderInitializer 实现类
+      if (ktProviderExtension.isApplyKcp) {
+        // 如果需要 ir 插桩，则需要解决 compileKotlin 任务的缓存问题
+        // 以下写法将该 task 的缓存跟整个 main 源集内的代码相关联，
+        // 如果模块内代码有改动，则重新生成 KtProviderInitializer 实现类
         // 如果不重新生成，则会导致 compileKotlin 不会重新构建该类，导致 ir 插桩失败
-        sourceSet.kotlin
+        project.extensions
+          .getByType(KotlinSourceSetContainer::class.java)
+          .sourceSets
+          .getByName("main")
+          .kotlin
           .srcDirs
           .filter { it.exists() }
           .forEach {
             task.inputs.dir(it)
           }
       }
+      val initializerClassName = getInitializerClassName()
+      task.inputs.property("initializerClassCanonicalName", initializerClassName)
       task.inputs.property("initializerClassName", ktProviderExtension.initializerClassName)
       task.inputs.property("initializerClassPackage", ktProviderExtension.initializerClassPackage)
       task.inputs.property("mBeforeFunctions", ktProviderExtension.mBeforeFunctions)
@@ -81,9 +99,9 @@ class KtProviderInitializerGenerator(
     project.extensions
       .getByType(KotlinSourceSetContainer::class.java)
       .sourceSets
-      .configureEach {
-        it.kotlin.srcDir(taskProvider)
-      }
+      .getByName("main")
+      .kotlin
+      .srcDir(taskProvider)
   }
   
   // 获取依赖模块的包名和类名
@@ -120,10 +138,6 @@ class KtProviderInitializerGenerator(
   ) {
     var file = ktProviderSource.get().asFile
     file.deleteRecursively()
-    println(
-      ".(${Exception().stackTrace[0].run { "$fileName:$lineNumber" }}) -> " +
-        "outputFile = $file"
-    )
     ktProviderExtension.initializerClassPackage.split(".").forEach {
       file = file.resolve(it)
     }

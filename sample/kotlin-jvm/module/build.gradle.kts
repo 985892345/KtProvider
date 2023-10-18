@@ -23,6 +23,3 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     jvmTarget = "17"
   }
 }
-
-ktProvider {
-}

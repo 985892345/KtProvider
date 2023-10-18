@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import java.io.File
 
 /**
  * .
@@ -19,8 +20,10 @@ import org.jetbrains.kotlin.config.CompilerConfigurationKey
 class KtProviderGradlePlugin : CommandLineProcessor {
   companion object {
     private const val OPTION_IS_CHECK_IMPL = "isCheckImpl"
+    private const val OPTION_CACHE_PATH = "cachePath"
     
     val ARG_IS_CHECK_IMPL = CompilerConfigurationKey<Boolean>(OPTION_IS_CHECK_IMPL)
+    val ARG_CACHE_PATH = CompilerConfigurationKey<File>(OPTION_CACHE_PATH)
   }
   override val pluginId: String = BuildConfig.PLUGIN_ID
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
@@ -29,12 +32,19 @@ class KtProviderGradlePlugin : CommandLineProcessor {
       valueDescription = "boolean",
       description = "是否检查被注解类是注解中标注参数的实现类(默认开启)",
       required = false
-    )
+    ),
+    CliOption(
+      optionName = OPTION_CACHE_PATH,
+      valueDescription = "String",
+      description = "缓存目录的路径，用于保存开启增量编译后需要编译信息",
+      required = true
+    ),
   )
   
   override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {
     when (option.optionName) {
       OPTION_IS_CHECK_IMPL -> configuration.put(ARG_IS_CHECK_IMPL, value.toBooleanStrictOrNull() ?: true)
+      OPTION_CACHE_PATH -> configuration.put(ARG_CACHE_PATH, File(value))
     }
   }
 }

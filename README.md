@@ -4,6 +4,7 @@
 - 支持 KMP(KMM)，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
 - 支持 KMP(KMM) 的多模块工程 (目前未测试，理论上支持)
 - 只提供底层支持，允许对服务管理者进一步封装
+- 支持增量编译
 
 ## 引入教程
 目前还处于测试阶段，未发布稳定包，请先设置 MavenCentral 快照仓库后进行依赖
@@ -51,7 +52,7 @@ ktProvider {
   // 可以设置一些东西
 }
 ```
-使用 KtProvider 插件后会自动生成一个 `IKtProviderInitializer` 接口的实现类，
+使用 KtProvider 插件后会自动生成一个 `KtProviderInitializer` 的实现类，
 并且会根据该模块的依赖关系自动调用其他模块的 `initProvider()` 方法
 
 #### 代码中
@@ -136,10 +137,10 @@ println(service.get())
 ## 实现原理
 ### ir 查桩
 基于 Kotlin Compile Plugin 中的 ir 插桩，寻找启动模块依赖的所有模块中包含有对应注解的类，
-然后添加到 `IKtProviderInitializer` 实现类的 `init` 方法下  
+然后添加到 `KtProviderInitializer` 实现类的 `init` 方法下  
 类似于如下代码:
 ```kotlin
-object KtProvider : IKtProviderInitializer {
+object KtProvider : KtProviderInitializer() {
   // 如果没有重写 init 方法，则会自动重写
   // 如果已经重写，则在方法体的第一行插入 _initImpl()
   override fun initKtProvider() {
@@ -157,9 +158,10 @@ object KtProvider : IKtProviderInitializer {
 }
 ```
 ### 自动生成 IKtProviderInitializer 实现类
-KtProvider 的 gradle 插件会自动生成 `IKtProviderInitializer` 的实现类，
+KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
 然后根据模块之间的依赖关系，自动调用其他模块实现类的 `initProvider()` 方法
-（但只允许 implementation、api 依赖其他模块）
+（但只允许 implementation、api 依赖其他模块）  
+所以只需要在启动模块中调用 `initKtProvider()` 方法即可加载全部路由
 
 
 ## 自定义封装
