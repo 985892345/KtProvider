@@ -2,7 +2,7 @@
 ![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=KtProvider-SNAPSHOT)  
 支持 KMP(KMM) 的跨模块服务提供轻量级框架  
 - 支持 KMP(KMM)，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
-- 支持 KMP(KMM) 的多模块工程 (目前未测试，理论上支持)
+- 支持 KMP(KMM) 的多模块工程 (jvm 和 Android 项目已通过测试)
 - 只提供底层支持，允许对服务管理者进一步封装
 - 支持增量编译
 
@@ -10,7 +10,7 @@
 目前还处于测试阶段，未发布稳定包，请先设置 MavenCentral 快照仓库后进行依赖
 ```kotlin
 // setting.gradle.kts
-
+// gradle 插件仓库地址
 pluginManagement {
   repositories {
     // ...
@@ -18,6 +18,8 @@ pluginManagement {
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }
 }
+
+// 依赖地址
 // 这个 dependencyResolutionManagement 为 Android 端的写法，该写法用于统一所有模块依赖
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -31,7 +33,6 @@ dependencyResolutionManagement {
 如果不使用 `dependencyResolutionManagement` 则采取以下写法
 ```kotlin
 // build.gradle.kts
-
 repositories {
   // mavenCentral 快照仓库
   maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
