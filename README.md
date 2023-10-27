@@ -83,7 +83,7 @@ interface ITestService {
 ```
 
 ### 实现模块
-实现模块依赖 api 模块，启动模块需要间接或直接依赖实现模块（使用 runtimeOnly 会导致不参与编译而无效）
+实现模块依赖 api 模块，启动模块需要间接或直接依赖实现模块（只支持 implementation 和 api）
 #### build.gradle.kts
 ```kotlin
 plugins {

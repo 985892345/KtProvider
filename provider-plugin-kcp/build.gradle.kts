@@ -6,10 +6,10 @@ plugins {
   id("com.github.gmazzo.buildconfig")
 }
 
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
   kotlinOptions {
-    jvmTarget = "17"
+    jvmTarget = "11"
   }
 }
 
@@ -33,9 +33,9 @@ publish {
 
 dependencies {
   compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable")
-  compileOnly("com.google.auto.service:auto-service-annotations:1.0.1")
-  kapt("com.google.auto.service:auto-service:1.0.1")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+  compileOnly("com.google.auto.service:auto-service-annotations:1.1.1")
+  kapt("com.google.auto.service:auto-service:1.1.1")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
   
   testImplementation(kotlin("test"))
   testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0") // https://github.com/tschuchortdev/kotlin-compile-testing

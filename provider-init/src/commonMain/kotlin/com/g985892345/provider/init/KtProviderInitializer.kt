@@ -73,9 +73,9 @@ abstract class KtProviderInitializer {
   
   companion object {
     // 用于 KtProviderManager 使用，当然你也可以使用他们实现自己路由管理类
-    private val NewImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
-    private val SingleImplProviderMapInternal = hashMapOf<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
-    private val KClassProviderMapInternal = hashMapOf<String, KClassProviderWrapper>()
+    private val NewImplProviderMapInternal = LinkedHashMap<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
+    private val SingleImplProviderMapInternal = LinkedHashMap<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
+    private val KClassProviderMapInternal = LinkedHashMap<String, KClassProviderWrapper>()
     
     val NewImplProviderMap: Map<KClass<*>, Map<String, NewImplProviderWrapper>>
       get() = NewImplProviderMapInternal
