@@ -54,7 +54,7 @@ ktProvider {
 }
 ```
 使用 KtProvider 插件后会自动生成一个 `KtProviderInitializer` 的实现类，
-并且会根据该模块的依赖关系自动调用其他模块的 `initProvider()` 方法
+并且会根据该模块的依赖关系自动调用其他模块的 `tryInitKtProvider()` 方法
 
 #### 代码中
 ```kotlin
@@ -62,14 +62,14 @@ ktProvider {
 fun main() {
   // 调用自动生成的 XXXKtProviderInitializer
   // 该类名默认为 模块名+KtProviderInitializer，可在 ktProvider 闭包中设置
-  XXXKtProviderInitializer.initKtProvider()
+  XXXKtProviderInitializer.tryInitKtProvider()
 }
 
 // Android 在 Application 的 onCreate 中加载
 class App : Application() {
   override fun onCreate() {
     super.onCreate()
-    XXXKtProviderInitializer.initKtProvider()
+    XXXKtProviderInitializer.tryInitKtProvider()
   }
 }
 ```
@@ -138,18 +138,18 @@ println(service.get())
 ## 实现原理
 ### ir 查桩
 基于 Kotlin Compile Plugin 中的 ir 插桩，寻找启动模块依赖的所有模块中包含有对应注解的类，
-然后添加到 `KtProviderInitializer` 实现类的 `init` 方法下  
+然后添加到 `KtProviderInitializer` 实现类的 `initKtProvider` 方法下  
 类似于如下代码:
 ```kotlin
 object KtProvider : KtProviderInitializer() {
-  // 如果没有重写 init 方法，则会自动重写
+  // 如果没有重写 initKtProvider 方法，则会自动重写
   // 如果已经重写，则在方法体的第一行插入 _initImpl()
   override fun initKtProvider() {
     _initImpl() // 先调用 _initImpl 方法进行初始化
     // ... 后面是你重写的内容
   }
   
-  // 该方法由 ir 添加
+  // 该方法由 ir 添加，用于收集当前模块的所有路由
   private fun _initImpl() {
     addKClassProvider("key1") { TestClass1::class }
     addNewImplProvider("key2") { TestClass2() }
@@ -160,9 +160,17 @@ object KtProvider : KtProviderInitializer() {
 ```
 ### 自动生成 IKtProviderInitializer 实现类
 KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
-然后根据模块之间的依赖关系，自动调用其他模块实现类的 `initProvider()` 方法
+然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
 （但只允许 implementation、api 依赖其他模块）  
-所以只需要在启动模块中调用 `initKtProvider()` 方法即可加载全部路由
+所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由  
+```kotlin
+// build.gradle.kts
+ktProvider {
+  // ktProvider 闭包中设置在 initKtProvider() 中调用自己类的方法
+  beforeInitProvider(/*...*/) // 在 initProvider() 方法体开头插入方法
+  afterInitProvider(/*...*/) // 在 initProvider() 方法体末尾插入方法
+}
+```
 
 
 ## 自定义封装

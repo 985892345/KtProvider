@@ -18,10 +18,21 @@ abstract class KtProviderInitializer {
   val mSingleImplProviderMap = LinkedHashMap<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
   val mKClassImplProviderMap = LinkedHashMap<String, KClassProviderWrapper>()
   
+  private var mHasInit = false
+  
+  /**
+   * 防止重复加载
+   */
+  fun tryInitKtProvider() {
+    if (mHasInit) return
+    mHasInit = true
+    initKtProvider()
+  }
+  
   /**
    * 初始化方法，ir 插桩的地方
    */
-  open fun initKtProvider() {
+  protected open fun initKtProvider() {
     mNewImplProviderMap.forEach { outer ->
       val innerMap = NewImplProviderMapInternal.getOrPut(outer.key) { hashMapOf() }
       outer.value.forEach { inner ->

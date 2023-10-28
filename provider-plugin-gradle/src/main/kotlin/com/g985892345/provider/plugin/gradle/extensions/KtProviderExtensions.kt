@@ -57,24 +57,19 @@ abstract class KtProviderExtensions(private val project: Project) {
    * 在 initProvider() 方法体开头插入一个静态方法或者 object 单例类方法
    *
    * 并不一定是方法体的开头，如果 [isApplyKcp] 为 true，在开启了对 KtProviderInitializer 实现类 ir 插桩时，
-   * 则用于初始化路由的方法将在最前面，紧接着是该函数设置的方法。
+   * 则用于收集路由的 _initImpl() 将在最前面，紧接着是该函数设置的方法。
    */
-  fun beforeFunction(packageName: String, className: String, functionName: String) {
+  fun beforeInitProvider(packageName: String, className: String, functionName: String) {
     mBeforeFunctions.add(Function(packageName, className, functionName))
   }
   
   /**
    * 在 initProvider() 方法体末尾插入一个静态方法或者 object 单例类方法
    */
-  fun afterFunction(packageName: String, className: String, functionName: String) {
+  fun afterInitProvider(packageName: String, className: String, functionName: String) {
     mAfterFunctions.add(Function(packageName, className, functionName))
   }
   
-  
-  /**
-   * 内部使用，是否已经被关联
-   */
-  internal var isLinked = false
   
   private fun String.capitalized(): String {
     return replaceFirstChar {

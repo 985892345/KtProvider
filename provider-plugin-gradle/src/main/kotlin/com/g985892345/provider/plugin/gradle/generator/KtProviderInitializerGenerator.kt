@@ -117,12 +117,7 @@ class KtProviderInitializerGenerator(
           val dependProject = dependency.dependencyProject
           if (dependProject.plugins.hasPlugin("io.github.985892345.KtProvider")) {
             val extension = dependProject.extensions.getByType(KtProviderExtensions::class.java)
-            if (!extension.isLinked) {
-              extension.isLinked = true
-              initializerClassName.add(
-                extension.initializerClassPackage to extension.initializerClassName
-              )
-            }
+            initializerClassName.add(extension.initializerClassPackage to extension.initializerClassName)
           }
         }
       }
@@ -170,7 +165,7 @@ private fun getKtProviderInitializerTemplate(
     override fun initKtProvider() {
       ${beforeFunctions.joinToString("\n      ") { it.invoke }}
       super.initKtProvider()
-      ${initializerClassName.joinToString("\n      ") { "${it.second}.initKtProvider()" }}
+      ${initializerClassName.joinToString("\n      ") { "${it.second}.tryInitKtProvider()" }}
       ${afterFunctions.joinToString("\n      ") { it.invoke }}
     }
   }
