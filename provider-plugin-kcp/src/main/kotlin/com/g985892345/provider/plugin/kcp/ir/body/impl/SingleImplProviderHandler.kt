@@ -123,13 +123,14 @@ class SingleImplProviderHandler(
     return irCall(implProviderFunction).also { call ->
       call.dispatchReceiver = irGet(initImplFunction.dispatchReceiverParameter!!)
       // 添加 KClass 参数
+      // classReference 为 null 时默认填充 Nothing::class，因为 Nothing 无实现类
       call.putValueArgument(
         0,
         arg.classReference ?: IrClassReferenceImpl(
           startOffset, endOffset,
           context.irBuiltIns.kClassClass.starProjectedType,
           context.irBuiltIns.kClassClass,
-          nothingSymbol.defaultType // clazzSymbol 为 null 时默认填充 Nothing::class，因为 Nothing 无实现类
+          nothingSymbol.defaultType
         )
       )
       // 添加 name 参数

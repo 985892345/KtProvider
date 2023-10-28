@@ -5,14 +5,15 @@ import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
 import com.g985892345.provider.plugin.kcp.ir.utils.location
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.jvm.ir.getValueArgument
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.types.classFqName
-import org.jetbrains.kotlin.ir.types.getClass
+import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -67,12 +68,25 @@ abstract class BaseImplProviderHandler(
     val location = irClass.location
     // 获取 clazz 参数
     val clazz = annotation.getValueArgument(clazzArg) as IrClassReference?
+      ?: irClass.superTypes.mapNotNull { it.classOrNull }.let {
+        // 获取唯一的实现的接口或者继承的类
+        if (it.size == 1) {
+          val symbol = it[0]
+          IrClassReferenceImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            symbol.starProjectedType,
+            symbol,
+            symbol.defaultType
+          )
+        } else null
+      }
     // 获取 name 参数
     val name = (annotation.getValueArgument(nameArg) as IrConst<String>?)?.value
     // 检查参数合法性
     if (clazz == null) {
       if (name == null) {
-        throw IllegalArgumentException("必须设置 clazz 或者 name!   位置：$location")
+        throw IllegalArgumentException("必须设置 clazz 或者 name! 除非直接父类型只有一个接口或者只继承了类   位置：$location")
       } else if (name.isEmpty()) {
         throw IllegalArgumentException("在不设置 clazz 时 name 不能为空串!   位置：$location")
       }

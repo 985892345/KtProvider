@@ -158,7 +158,7 @@ object KtProvider : KtProviderInitializer() {
   }
 }
 ```
-### 自动生成 IKtProviderInitializer 实现类
+### 自动生成 KtProviderInitializer 实现类
 KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
 然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
 （但只允许 implementation、api 依赖其他模块）  
@@ -174,10 +174,10 @@ ktProvider {
 
 
 ## 自定义封装
-我只设计了服务提供框架的底层支持，你可以实现自己的 KtProviderManager 来扩展其他功能  
+  
 
 `io.github.985892345.KtProvider` 的 gradle 插件默认依赖了 `provider-init`、`provider-annotation`，
-你可以不依赖 `provider-manager`，实现自己的 KtProviderManager，具体实现逻辑请看源码
+你可以不依赖 `provider-manager`，我只设计了服务提供框架的底层支持，你可以实现自己的 `KtProviderManager` 来扩展其他功能，具体实现逻辑请看源码
 
 
 ## License
