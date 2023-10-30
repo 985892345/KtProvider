@@ -1,12 +1,14 @@
 package com.g985892345.provider.plugin.kcp.ir.body.impl
 
 import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.ImplProviderArg
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
 import com.g985892345.provider.plugin.kcp.ir.utils.location
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.jvm.ir.getValueArgument
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -43,20 +45,9 @@ abstract class BaseImplProviderHandler(
   }
   
   // 检查 class 是否存在空构造器
-  protected fun checkEmptyConstructor(irClass: IrClass) {
-    irClass.constructors.find { it.valueParameters.isEmpty() }
+  protected fun checkEmptyConstructor(irClass: IrClass): IrConstructor {
+    return irClass.constructors.find { it.valueParameters.isEmpty() }
       ?: throw IllegalStateException("不存在空构造器   位置：${irClass.location}")
-  }
-  
-  // 检查被注解类是否是 clazz 参数的实现类
-  protected fun checkImpl(irClass: IrClass, classReference: IrClassReference?) {
-    if (!data.isCheckImpl) return
-    if (classReference == null) return
-    // 这里是获取注解中 clazz 参数表示的 IrClass 对象，不应该会出现空
-    val classReferenceIrClass = classReference.classType.getClass()!!
-    if (!irClass.isSubclassOf(classReferenceIrClass)) {
-      throw IllegalStateException("被注解类不是注解中标注参数的实现类   位置：${irClass.location}")
-    }
   }
   
   // 获取注解参数
@@ -67,9 +58,13 @@ abstract class BaseImplProviderHandler(
   ): ImplProviderArg {
     val location = irClass.location
     // 获取 clazz 参数
-    val clazz = annotation.getValueArgument(clazzArg) as IrClassReference?
-      ?: irClass.superTypes.mapNotNull { it.classOrNull }.let {
-        // 获取唯一的实现的接口或者继承的类
+    var clazz = annotation.getValueArgument(clazzArg) as IrClassReference?
+    checkImpl(irClass, clazz)
+    // 获取 name 参数
+    val name = (annotation.getValueArgument(nameArg) as IrConst<String>?)?.value
+    if (name == null && clazz == null) {
+      // 获取唯一的实现的接口或者继承的类
+      clazz = irClass.superTypes.mapNotNull { it.classOrNull }.let {
         if (it.size == 1) {
           val symbol = it[0]
           IrClassReferenceImpl(
@@ -81,8 +76,7 @@ abstract class BaseImplProviderHandler(
           )
         } else null
       }
-    // 获取 name 参数
-    val name = (annotation.getValueArgument(nameArg) as IrConst<String>?)?.value
+    }
     // 检查参数合法性
     if (clazz == null) {
       if (name == null) {
@@ -97,17 +91,14 @@ abstract class BaseImplProviderHandler(
     return arg
   }
   
-  protected data class ImplProviderArg(
-    val classReference: IrClassReference?,
-    val name: String?
-  ) {
-    // 打印信息
-    val msg = when {
-      classReference == null && name == null -> ""
-      classReference == null && name != null -> "name=$name"
-      classReference != null && name == null -> "clazz=${classReference.classType.classFqName}"
-      classReference != null && name != null -> "clazz=${classReference.classType.classFqName}, name=$name"
-      else -> error("")
+  // 检查被注解类是否是 clazz 参数的实现类
+  private fun checkImpl(irClass: IrClass, classReference: IrClassReference?) {
+    if (!data.isCheckImpl) return
+    if (classReference == null) return
+    // 这里是获取注解中 clazz 参数表示的 IrClass 对象，不应该会出现空
+    val classReferenceIrClass = classReference.classType.getClass()!!
+    if (!irClass.isSubclassOf(classReferenceIrClass)) {
+      throw IllegalStateException("被注解类不是注解中标注参数的实现类   位置：${irClass.location}")
     }
   }
   

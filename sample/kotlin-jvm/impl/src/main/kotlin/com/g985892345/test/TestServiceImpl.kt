@@ -18,7 +18,7 @@ import com.g985892345.provider.annotation.SingleImplProvider
 //   }
 // }
 
-@NewImplProvider(clazz = ITestService::class)
+@NewImplProvider
 class TestServiceImpl3 : ITestService {
   override fun get(): String {
     return toString()

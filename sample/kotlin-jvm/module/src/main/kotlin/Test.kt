@@ -8,7 +8,7 @@ import com.g985892345.provider.manager.KtProviderManager
  * 2023/6/20 22:07
  */
 fun main() {
-  ModuleKtProviderInitializer.initKtProvider() // 初始化服务
+  ModuleKtProviderInitializer.tryInitKtProvider() // 初始化服务
   val service1 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = null)
   println(service1.get())
   val service21 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = false)

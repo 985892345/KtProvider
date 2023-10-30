@@ -1,9 +1,9 @@
 package com.g985892345.provider.plugin.kcp.ir.body.kclass
 
-import com.g985892345.provider.plugin.kcp.cache.ClassIdCacheManager
+import com.g985892345.provider.plugin.kcp.cache.IrClassCacheData
 import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.kclass.utils.KClassCacheManager
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
-import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -40,22 +40,25 @@ class KClassProviderHandler(
   data: KtProviderData
 ) : ProviderHandler {
   
-  private val mClassIdCache = ClassIdCacheManager(
+  private val mCacheManager = KClassCacheManager(
     data.cacheManagerDir.resolveFile("KClassProviderCache.json")
   )
   
-  private val kClassProviderAnnotation = FqName("com.g985892345.provider.annotation.KClassProvider")
-  private val mIrClassWithAnnotation = LinkedHashMap<ClassId, Pair<IrClass, List<IrConstructorCall>>>()
   private val messageCollector = data.message
+  private val kClassProviderAnnotation = FqName("com.g985892345.provider.annotation.KClassProvider")
+  private val mGenerateArgByClassId = LinkedHashMap<ClassId, Pair<IrClass, List<String>>>()
   
   override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
-    mIrClassWithAnnotation.clear()
+    mGenerateArgByClassId.clear()
     // 加载缓存
-    mClassIdCache.get()
-      .mapNotNull { pluginContext.referenceClass(it) }
+    mCacheManager.get()
+      .mapNotNull { data ->
+        pluginContext.referenceClass(data.impl.classId)?.let { it to data.names }
+      }
       .forEach {
-        messageCollector.log("KClassProviderCache: class=${it.owner.location}")
-        selectIrClass(pluginContext, moduleFragment, it.owner)
+        messageCollector.log("KClassProviderCache: class=${it.first.owner.location}")
+        val classId = it.first.owner.classId!!
+        mGenerateArgByClassId[classId] = it.first.owner to it.second
       }
   }
   
@@ -67,15 +70,17 @@ class KClassProviderHandler(
       }
       if (annotations.isNotEmpty()) {
         // 如果 classId 相同，这里会覆盖掉缓存
-        mIrClassWithAnnotation[classId] = irClass to annotations
+        mGenerateArgByClassId[classId] = irClass to annotations.map {
+          @Suppress("UNCHECKED_CAST")
+          (it.getValueArgument(0) as IrConst<String>).value
+        }
       } else {
         // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
-        mIrClassWithAnnotation.remove(classId)
+        mGenerateArgByClassId.remove(classId)
       }
     }
   }
   
-  @Suppress("UNCHECKED_CAST")
   override fun IrBlockBodyBuilder.generateCode(
     pluginContext: IrPluginContext,
     moduleFragment: IrModuleFragment,
@@ -92,10 +97,9 @@ class KClassProviderHandler(
       .single {
         it.overrides(superClassFunction)
       }
-    mIrClassWithAnnotation.forEach { entry ->
+    mGenerateArgByClassId.forEach { entry ->
       val irClass = entry.value.first
-      entry.value.second.forEach { annotation ->
-        val name = (annotation.getValueArgument(0) as IrConst<String>).value
+      entry.value.second.forEach { name ->
         val key = getKey(irClass, name)
         putAndCheckUniqueKClassKey(key, irClass.location)
         messageCollector.log("@KClassProvider: $irClass.location")
@@ -104,9 +108,12 @@ class KClassProviderHandler(
     }
     
     // 保存进缓存
-    mClassIdCache.put(
-      mIrClassWithAnnotation.mapNotNullTo(hashSetOf()) {
-        it.key
+    mCacheManager.put(
+      mGenerateArgByClassId.map {
+        KClassCacheManager.KClassCacheData(
+          IrClassCacheData(it.key),
+          it.value.second
+        )
       }
     )
   }

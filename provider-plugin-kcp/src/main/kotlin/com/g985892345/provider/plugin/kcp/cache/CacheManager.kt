@@ -35,14 +35,14 @@ data class CacheManagerDir(
 
 
 data class CacheManagerFile(
-  val cacheFile: File
+  val file: File
 ) {
   
   fun put(value: String) {
-    cacheFile.writeText(value)
+    file.writeText(value)
   }
   
   fun get(): String {
-    return cacheFile.readText()
+    return file.readText()
   }
 }

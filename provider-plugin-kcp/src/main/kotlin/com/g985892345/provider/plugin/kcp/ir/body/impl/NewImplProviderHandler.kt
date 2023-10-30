@@ -1,6 +1,9 @@
 package com.g985892345.provider.plugin.kcp.ir.body.impl
 
-import com.g985892345.provider.plugin.kcp.cache.ClassIdCacheManager
+import com.g985892345.provider.plugin.kcp.cache.IrClassCacheData
+import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.ImplCacheManager
+import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.ImplProviderArg
+import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.toImplProviderArg
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
 import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
@@ -13,7 +16,6 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -37,22 +39,25 @@ class NewImplProviderHandler(
   data: KtProviderData
 ) : BaseImplProviderHandler(data) {
   
-  private val mClassIdCache = ClassIdCacheManager(
+  private val mCacheManager = ImplCacheManager(
     data.cacheManagerDir.resolveFile("NewImplProviderCache.json")
   )
   
   private val newImplProviderAnnotation = FqName("com.g985892345.provider.annotation.NewImplProvider")
-  private val mIrClassWithAnnotation = LinkedHashMap<ClassId, Pair<IrClass, List<IrConstructorCall>>>()
+  private val mGenerateArgByIrClass = LinkedHashMap<ClassId, Pair<IrClass, List<ImplProviderArg>>>()
   
   override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
     super.init(pluginContext, moduleFragment)
-    mIrClassWithAnnotation.clear()
+    mGenerateArgByIrClass.clear()
     // 加载缓存
-    mClassIdCache.get()
-      .mapNotNull { pluginContext.referenceClass(it) }
+    mCacheManager.get()
+      .mapNotNull { data ->
+        pluginContext.referenceClass(data.impl.classId)?.let { it to data }
+      }
       .forEach {
-        messageCollector.log("NewImplProviderCache: class=${it.owner.location}")
-        selectIrClass(pluginContext, moduleFragment, it.owner)
+        messageCollector.log("NewImplProviderCache: class=${it.first.owner.location}")
+        val classId = it.first.owner.classId!!
+        mGenerateArgByIrClass[classId] = it.first.owner to it.second.toImplProviderArg(pluginContext)
       }
   }
   
@@ -67,10 +72,12 @@ class NewImplProviderHandler(
       }
       if (annotations.isNotEmpty()) {
         // 如果 classId 相同，这里会覆盖掉缓存
-        mIrClassWithAnnotation[classId] = irClass to annotations
+        mGenerateArgByIrClass[classId] = irClass to annotations.map {
+          getImplProviderArg(irClass, it)
+        }
       } else {
         // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
-        mIrClassWithAnnotation.remove(classId)
+        mGenerateArgByIrClass.remove(classId)
       }
     }
   }
@@ -91,23 +98,24 @@ class NewImplProviderHandler(
       .single {
         it.overrides(superClassFunction)
       }
-    mIrClassWithAnnotation.forEach { entry ->
+    mGenerateArgByIrClass.forEach { entry ->
       val irClass = entry.value.first
-      entry.value.second.forEach { annotation ->
-        checkEmptyConstructor(irClass)
-        val arg = getImplProviderArg(irClass, annotation)
-        checkImpl(irClass, arg.classReference)
-        messageCollector.log("@NewImplProvider: ${irClass.location} -> (${arg.msg})")
-        val irConstructor = irClass.constructors
-          .single { it.valueParameters.isEmpty() }
-        +irAddNewImplProvider(pluginContext, arg, irConstructor, initImplFunction, implProviderFunction)
+      entry.value.second.forEach {
+        messageCollector.log("@NewImplProvider: ${irClass.location} -> (${it.msg})")
+        val emptyConstructor = checkEmptyConstructor(irClass)
+        +irAddNewImplProvider(pluginContext, it, emptyConstructor, initImplFunction, implProviderFunction)
       }
     }
     
     // 保存进缓存
-    mClassIdCache.put(
-      mIrClassWithAnnotation.mapNotNullTo(hashSetOf()) {
-        it.key
+    mCacheManager.put(
+      mGenerateArgByIrClass.map { entry ->
+        ImplCacheManager.ImplCacheData(
+          IrClassCacheData(entry.key),
+          entry.value.second.map { arg ->
+            arg.irClass?.classId?.let { IrClassCacheData(it) } to arg.name
+          }
+        )
       }
     )
   }

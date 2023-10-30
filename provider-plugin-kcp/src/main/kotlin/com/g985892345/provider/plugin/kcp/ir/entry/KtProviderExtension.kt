@@ -52,7 +52,6 @@ class KtProviderExtension(
       irFile.acceptChildrenVoid(object : IrElementVisitorVoid {
         override fun visitClass(declaration: IrClass) {
           super.visitClass(declaration)
-          log("class = ${declaration.location}")
           handlers.forEach {
             it.selectIrClass(pluginContext, moduleFragment, declaration)
           }
