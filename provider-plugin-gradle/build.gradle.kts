@@ -58,6 +58,7 @@ publishing {
   }
 }
 
+// 补充 publishToMavenCentral task 用于一键发版
 tasks.create("publishToMavenCentral") {
   group = "publishing"
   dependsOn(tasks.getByName("publishAllPublicationsToMavenCentralRepository"))

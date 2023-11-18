@@ -31,7 +31,7 @@ class KtProviderInitializerGenerator(
   }
   
   private val ktProviderSource = project.layout.buildDirectory.dir(
-    "generated/source/ktProvider/${SourceSet.MAIN_SOURCE_SET_NAME}"
+    "generated/ktProvider/${SourceSet.MAIN_SOURCE_SET_NAME}"
   )
   
   private val taskName = getTaskName(project)
@@ -61,7 +61,7 @@ class KtProviderInitializerGenerator(
     // 生成 KtProviderInitializer 的实现类
     return project.tasks.register(taskName) { task ->
       task.group = "ktProvider"
-      if (ktProviderExtension.isApplyKcp) {
+      if (ktProviderExtension.enableKcp) {
         // 如果需要 ir 插桩，则需要解决 compileKotlin 任务的缓存问题
         // 以下写法将该 task 的缓存跟整个 main 源集内的代码相关联，
         // 如果模块内代码有改动，则重新生成 KtProviderInitializer 实现类
@@ -77,20 +77,23 @@ class KtProviderInitializerGenerator(
             task.inputs.dir(it)
           }
       }
-      val initializerClassName = getInitializerClassName()
-      task.inputs.property("initializerClassCanonicalName", initializerClassName)
-      task.inputs.property("initializerClassName", ktProviderExtension.initializerClassName)
-      task.inputs.property("initializerClassPackage", ktProviderExtension.initializerClassPackage)
-      task.inputs.property("mBeforeFunctions", ktProviderExtension.mBeforeFunctions)
-      task.inputs.property("mAfterFunctions", ktProviderExtension.mAfterFunctions)
+      val dependModuleProjects = getDependModulePaths()
+      val delegate = ktProviderExtension.delegateClass
+      task.inputs.property("dependModulePaths", dependModuleProjects.map { it.path })
+      task.inputs.property("delegate", delegate ?: "")
       task.outputs.dir(ktProviderSource)
       task.doLast {
+        val selfInitializerClass = KtProviderExtensions.getInitializerClass(project)
         val text = getKtProviderInitializerTemplate(
-          ktProviderExtension, initializerClassName,
-          ktProviderExtension.mBeforeFunctions,
-          ktProviderExtension.mAfterFunctions,
+          selfInitializerClass,
+          dependModuleProjects.filter { dependProject ->
+            dependProject.extensions.findByType(KtProviderExtensions::class.java) != null
+          }.map { dependProject ->
+            KtProviderExtensions.getInitializerClass(dependProject)
+          },
+          delegate
         )
-        outputFile(ktProviderExtension, it.name, text)
+        outputFile(selfInitializerClass, it.name, text)
       }
     }
   }
@@ -104,10 +107,9 @@ class KtProviderInitializerGenerator(
       .srcDir(taskProvider)
   }
   
-  // 获取依赖模块的包名和类名
-  private fun getInitializerClassName(): List<Pair<String, String>> {
-    val initializerClassName = mutableListOf<Pair<String, String>>()
-    // 解析所有依赖的模块 KtProviderInitializer 实现类
+  // 获取依赖的所有模块 path
+  private fun getDependModulePaths(): List<Project> {
+    val dependProjects = mutableListOf<Project>()
     listOf(
       "implementation",
       "api"
@@ -115,58 +117,67 @@ class KtProviderInitializerGenerator(
       config.dependencies.forEach { dependency ->
         if (dependency is ProjectDependency) {
           val dependProject = dependency.dependencyProject
-          if (dependProject.plugins.hasPlugin("io.github.985892345.KtProvider")) {
-            val extension = dependProject.extensions.getByType(KtProviderExtensions::class.java)
-            initializerClassName.add(extension.initializerClassPackage to extension.initializerClassName)
-          }
+          dependProjects.add(dependProject)
         }
       }
     }
-    return initializerClassName
+    return dependProjects
   }
   
   // 输出文件
   private fun outputFile(
-    ktProviderExtension: KtProviderExtensions,
+    selfInitializerClass: String,
     taskName: String,
-    fileText: String
+    fileText: String,
   ) {
-    var file = ktProviderSource.get().asFile
-    file.deleteRecursively()
-    ktProviderExtension.initializerClassPackage.split(".").forEach {
-      file = file.resolve(it)
+    var dir = ktProviderSource.get().asFile
+    dir.deleteRecursively()
+    selfInitializerClass.substringBeforeLast(".").split(".").forEach {
+      dir = dir.resolve(it)
     }
-    file.mkdirs()
-    file = file.resolve("${ktProviderExtension.initializerClassName}.kt")
-    file.createNewFile()
-    file.writeText(
+    dir.mkdirs()
+    val ktProviderImplFile = dir.resolve("${selfInitializerClass.substringAfterLast(".")}.kt")
+    ktProviderImplFile.createNewFile()
+    ktProviderImplFile.writeText(
       "// 自动生成，task 为 $taskName \n" +
-        "// 时间戳: ${System.currentTimeMillis()} (用于构造不同的源文件，解决 compileKotlin 缓存问题) \n" +
-        fileText
+          "// 时间戳: ${System.currentTimeMillis()} (用于构造不同的源文件，解决 compileKotlin 缓存问题) \n" +
+          fileText
     )
-    // todo 后续采取更好的方法解决 compileKotlin 缓存问题
   }
 }
 
 private fun getKtProviderInitializerTemplate(
-  ktProviderExtension: KtProviderExtensions,
-  initializerClassName: List<Pair<String, String>>,
-  beforeFunctions: List<KtProviderExtensions.Function>,
-  afterFunctions: List<KtProviderExtensions.Function>,
+  selfInitializerClass: String,
+  invokeInitializerClass: List<String>,
+  delegateClass: String?,
 ): String = """
-  package ${ktProviderExtension.initializerClassPackage}
+  package ${selfInitializerClass.substringBeforeLast(".")}
   
   import com.g985892345.provider.init.KtProviderInitializer
-  ${initializerClassName.joinToString("\n  ") { "import ${it.first}.${it.second}" }}
-  ${beforeFunctions.joinToString("\n  ") { it.import }}
-  ${afterFunctions.joinToString("\n  ") { it.import }}
+  import kotlin.reflect.KClass
   
-  object ${ktProviderExtension.initializerClassName} : KtProviderInitializer() {
+  object ${selfInitializerClass.substringAfterLast(".")} : KtProviderInitializer() {
+  
     override fun initKtProvider() {
-      ${beforeFunctions.joinToString("\n      ") { it.invoke }}
+      ${if (delegateClass != null) "$delegateClass.onSuperInitKtProviderBefore()" else ""}
       super.initKtProvider()
-      ${initializerClassName.joinToString("\n      ") { "${it.second}.tryInitKtProvider()" }}
-      ${afterFunctions.joinToString("\n      ") { it.invoke }}
+      ${if (delegateClass != null) "$delegateClass.onSuperInitKtProviderAfter()" else ""}
+    }
+  
+    override fun initAddAllProvider() {
+      super.initAddAllProvider()
+      ${if (delegateClass != null) "$delegateClass.onSelfAllProviderFinish()" else ""}
+      ${invokeInitializerClass.joinToString("\n      ") { "${it}.tryInitKtProvider()" }}
+    }
+    
+    override fun <T : Any> addImplProvider(clazz: KClass<T>, name: String, init: () -> T) {
+      ${if (delegateClass != null) "if ($delegateClass.onAddImplProvider(clazz, name, init)) super.addImplProvider(clazz, name, init)"
+        else "super.addImplProvider(clazz, name, init)"}
+    }
+    
+    override fun <T : Any> addKClassProvider(clazz: KClass<T>, name: String, init: () -> KClass<out T>) {
+      ${if (delegateClass != null) "if ($delegateClass.onAddKClassProvider(clazz, name, init)) super.addKClassProvider(clazz, name, init)"
+        else "super.addKClassProvider(clazz, name, init)"}
     }
   }
 """.trimIndent()

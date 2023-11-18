@@ -31,7 +31,9 @@ class KtProviderRegistrar : CompilerPluginRegistrar() {
           configuration.get(KtProviderGradlePlugin.ARG_CACHE_PATH)?.let {
             it.mkdirs()
             CacheManagerDir(it)
-          } ?: throw IllegalStateException("未设置 cachePath"),
+          } ?: throw IllegalArgumentException("未设置 cachePath"),
+          configuration.get(KtProviderGradlePlugin.ARG_INITIALIZER_CLASS)
+            ?: throw IllegalArgumentException("未设置 KtProviderInitializer 实现类全称")
         )
       )
     )

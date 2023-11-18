@@ -1,4 +1,4 @@
-import com.g985892345.provider.annotation.SingleImplProvider
+import com.g985892345.provider.annotation.ImplProvider
 import com.g985892345.provider.ktprovider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
 
@@ -8,8 +8,8 @@ import com.g985892345.provider.manager.KtProviderManager
  * @author 985892345
  * 2023/10/30 16:45
  */
-@SingleImplProvider(ITestService::class, "zzz")
-@SingleImplProvider(ITestService2::class, "zzz")
+@ImplProvider(ITestService::class, "zzz")
+@ImplProvider(ITestService2::class, "zzz")
 object RepeatableTest : ITestService, ITestService2 {
   override fun get(): String {
     return ""

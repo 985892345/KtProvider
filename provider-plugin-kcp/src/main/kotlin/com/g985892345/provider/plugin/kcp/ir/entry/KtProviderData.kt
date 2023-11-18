@@ -13,5 +13,6 @@ class KtProviderData(
   val message: MessageCollector,
   val isCheckImpl: Boolean,
   val cacheManagerDir: CacheManagerDir,
+  val initializerClass: String,
 ) {
 }

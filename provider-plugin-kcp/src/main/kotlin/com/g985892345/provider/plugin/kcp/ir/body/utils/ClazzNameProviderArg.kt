@@ -1,4 +1,4 @@
-package com.g985892345.provider.plugin.kcp.ir.body.impl.utils
+package com.g985892345.provider.plugin.kcp.ir.body.utils
 
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.types.classFqName
@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.ir.types.getClass
  * @author 985892345
  * 2023/10/30 10:41
  */
-data class ImplProviderArg(
+data class ClazzNameProviderArg(
   val classReference: IrClassReference?,
   val name: String?
 ) {

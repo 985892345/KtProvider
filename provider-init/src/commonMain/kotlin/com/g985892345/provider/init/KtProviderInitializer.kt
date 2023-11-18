@@ -1,8 +1,7 @@
 package com.g985892345.provider.init
 
+import com.g985892345.provider.init.wrapper.ImplProviderWrapper
 import com.g985892345.provider.init.wrapper.KClassProviderWrapper
-import com.g985892345.provider.init.wrapper.NewImplProviderWrapper
-import com.g985892345.provider.init.wrapper.SingleImplProviderWrapper
 import kotlin.reflect.KClass
 
 /**
@@ -14,85 +13,63 @@ import kotlin.reflect.KClass
  */
 abstract class KtProviderInitializer {
   
-  val mNewImplProviderMap = LinkedHashMap<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
-  val mSingleImplProviderMap = LinkedHashMap<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
-  val mKClassImplProviderMap = LinkedHashMap<String, KClassProviderWrapper>()
-  
   private var mHasInit = false
   
   /**
    * 防止重复加载
    */
-  fun tryInitKtProvider() {
+  open fun tryInitKtProvider() {
     if (mHasInit) return
     mHasInit = true
     initKtProvider()
   }
   
-  /**
-   * 初始化方法，ir 插桩的地方
-   */
   protected open fun initKtProvider() {
-    mNewImplProviderMap.forEach { outer ->
-      val innerMap = NewImplProviderMapInternal.getOrPut(outer.key) { hashMapOf() }
-      outer.value.forEach { inner ->
-        if (innerMap.put(inner.key, inner.value) != null) {
-          val clazzInfo = if (outer.key != Nothing::class) "，clazz=${outer.key}" else ""
-          val nameInfo = if (inner.key.isNotEmpty()) ", name=${inner.key}" else ""
-          throw IllegalStateException("@NewImplProvider 注解出现重复$clazzInfo$nameInfo")
-        }
-      }
-    }
-    mSingleImplProviderMap.forEach { outer ->
-      val innerMap = SingleImplProviderMapInternal.getOrPut(outer.key) { hashMapOf() }
-      outer.value.forEach { inner ->
-        if (innerMap.put(inner.key, inner.value) != null) {
-          val clazzInfo = if (outer.key != Nothing::class) "，clazz=${outer.key}" else ""
-          val nameInfo = if (inner.key.isNotEmpty()) ", name=${inner.key}" else ""
-          throw IllegalStateException("@SingleImplProvider 注解出现重复$clazzInfo$nameInfo")
-        }
-      }
-    }
-    mKClassImplProviderMap.forEach { entry ->
-      if (KClassProviderMapInternal.put(entry.key, entry.value) != null) {
-        throw IllegalStateException("@SingleImplProvider 注解出现重复，name=${entry.key}, " +
-          "class 为 ${entry.value.get<Any>()}")
-      }
-    }
+    initAddAllProvider()
   }
   
   /**
-   * 添加一个 @NewImplProvider 的初始化 init，由 ir 调用
+   * 这里会使用 ir 在实现类中插入调用 _initImpl() 方法的逻辑
+   * _initImpl() 方法体包含所有的 [addImplProvider] 和 [addKClassProvider]
+   * 如果你想拦截某个 Provider 添加，则可以在 ktProvider 闭包中设置代理类
    */
-  fun addNewImplProvider(clazz: KClass<*>, name: String, init: () -> Any) {
-    mNewImplProviderMap.getOrPut(clazz) { hashMapOf() }[name] = NewImplProviderWrapper(init)
+  protected open fun initAddAllProvider() {
   }
   
   /**
-   * 添加一个 @SingleImplProvider 的初始化 init，由 ir 调用
+   * 添加一个 @ImplProvider 的初始化 init，由 ir 调用
    */
-  fun addSingleImplProvider(clazz: KClass<*>, name: String, init: () -> Any) {
-    mSingleImplProviderMap.getOrPut(clazz) { hashMapOf() }[name] = SingleImplProviderWrapper(init)
+  open fun <T : Any> addImplProvider(clazz: KClass<T>, name: String, init: () -> T) {
+    val wrapper = ImplProviderWrapper(name, clazz, init)
+    val oldWrapper = ImplProviderMapInternal.getOrPut(clazz) { linkedMapOf() }.put(name, wrapper)
+    if (oldWrapper != null) {
+      val clazzInfo = if (clazz != Nothing::class) "，clazz=${clazz}" else ""
+      val nameInfo = if (name.isNotEmpty()) ", name=${name}" else ""
+      throw IllegalStateException("@ImplProvider 注解出现重复$clazzInfo$nameInfo")
+    }
   }
   
   /**
    * 添加一个 @KClassProvider 的初始化 init，由 ir 调用
    */
-  fun addKClassProvider(name: String, init: () -> KClass<*>) {
-    mKClassImplProviderMap[name] = KClassProviderWrapper(init)
+  open fun <T : Any> addKClassProvider(clazz: KClass<T>, name: String, init: () -> KClass<out T>) {
+    val wrapper = KClassProviderWrapper(name, clazz, init)
+    val oldWrapper = KClassProviderMapInternal.getOrPut(clazz) { linkedMapOf() }.put(name, wrapper)
+    if (oldWrapper != null) {
+      val clazzInfo = if (clazz != Nothing::class) "，clazz=${clazz}" else ""
+      val nameInfo = if (name.isNotEmpty()) ", name=${name}" else ""
+      throw IllegalStateException("@KClassProvider 注解出现重复$clazzInfo$nameInfo")
+    }
   }
   
   companion object {
     // 用于 KtProviderManager 使用，当然你也可以使用他们实现自己路由管理类
-    private val NewImplProviderMapInternal = LinkedHashMap<KClass<*>, HashMap<String, NewImplProviderWrapper>>()
-    private val SingleImplProviderMapInternal = LinkedHashMap<KClass<*>, HashMap<String, SingleImplProviderWrapper>>()
-    private val KClassProviderMapInternal = LinkedHashMap<String, KClassProviderWrapper>()
+    protected val ImplProviderMapInternal = LinkedHashMap<KClass<*>, LinkedHashMap<String, ImplProviderWrapper<*>>>()
+    protected val KClassProviderMapInternal = LinkedHashMap<KClass<*>, LinkedHashMap<String, KClassProviderWrapper<*>>>()
     
-    val NewImplProviderMap: Map<KClass<*>, Map<String, NewImplProviderWrapper>>
-      get() = NewImplProviderMapInternal
-    val SingleImplProviderMap: Map<KClass<*>, Map<String, SingleImplProviderWrapper>>
-      get() = SingleImplProviderMapInternal
-    val KClassProviderMap: Map<String, KClassProviderWrapper>
+    val ImplProviderMap: Map<KClass<*>, Map<String, ImplProviderWrapper<*>>>
+      get() = ImplProviderMapInternal
+    val KClassProviderMap: Map<KClass<*>, Map<String, KClassProviderWrapper<*>>>
       get() = KClassProviderMapInternal
   }
 }

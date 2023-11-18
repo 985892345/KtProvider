@@ -1,9 +1,8 @@
 package com.g985892345.test
 
 import ITestService
+import com.g985892345.provider.annotation.ImplProvider
 import com.g985892345.provider.annotation.KClassProvider
-import com.g985892345.provider.annotation.NewImplProvider
-import com.g985892345.provider.annotation.SingleImplProvider
 
 /**
  * .
@@ -18,21 +17,22 @@ import com.g985892345.provider.annotation.SingleImplProvider
 //   }
 // }
 
-@NewImplProvider
+@ImplProvider
 class TestServiceImpl3 : ITestService {
   override fun get(): String {
     return toString()
   }
 }
 
-@SingleImplProvider(clazz = ITestService::class, "single")
+@ImplProvider(clazz = ITestService::class, "single")
 object SingleTestServiceImpl : ITestService {
   override fun get(): String {
     return toString()
   }
 }
 
-@KClassProvider("class")
+@KClassProvider
+@KClassProvider(name = "class")
 class KClassTestServiceImpl : ITestService {
   override fun get(): String {
     return toString()

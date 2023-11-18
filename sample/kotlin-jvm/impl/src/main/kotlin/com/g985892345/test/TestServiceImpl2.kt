@@ -2,7 +2,7 @@ package com.g985892345.test
 
 import ITestService
 import ITestService2
-import com.g985892345.provider.annotation.SingleImplProvider
+import com.g985892345.provider.annotation.ImplProvider
 
 /**
  * .
@@ -10,11 +10,11 @@ import com.g985892345.provider.annotation.SingleImplProvider
  * @author 985892345
  * 2023/7/22 13:41
  */
-@SingleImplProvider
+@ImplProvider
 object TestServiceImpl2 : ITestService2 {
 }
 
-@SingleImplProvider(ITestService::class, "333")
+@ImplProvider(ITestService::class, "333")
 object TestServiceImpl4 : ITestService {
   override fun get(): String {
     return "get"

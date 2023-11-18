@@ -9,22 +9,16 @@ import com.g985892345.provider.manager.KtProviderManager
  */
 fun main() {
   ModuleKtProviderInitializer.tryInitKtProvider() // 初始化服务
-  val service1 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = null)
+  val service1 = KtProviderManager.getImplOrThrow(ITestService::class)
   println(service1.get())
-  val service21 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = false)
-  println(service21.get())
-  val service22 = KtProviderManager.getImplOrThrow(ITestService::class, singleton = false)
-  println(service22.get())
-  val service31 = KtProviderManager.getImplOrThrow(ITestService::class, "single", singleton = true)
+  val service31 = KtProviderManager.getImplOrThrow(ITestService::class, "single")
   println(service31.get())
-  val service32 = KtProviderManager.getImplOrThrow(ITestService::class, "single", singleton = true)
-  println(service32.get())
   val kClass = KtProviderManager.getKClassOrThrow<ITestService>("class")
   println(kClass)
-  val singleImplList = KtProviderManager.getAllSingleImpl(ITestService::class)
-  println("$singleImplList -> ${singleImplList.map { it.value.invoke() }}")
-  val newImplList = KtProviderManager.getAllNewImpl(ITestService::class)
-  println("$newImplList -> ${newImplList.map { it.value.invoke() }}")
+  val allImplList = KtProviderManager.getAllImpl(ITestService::class)
+  println("$allImplList -> ${allImplList.map { it.value.get() }}")
+  val kClassList = KtProviderManager.getAllKClass(ITestService::class)
+  println("$kClassList -> ${kClassList.map { it.value.get() }}")
   println(ModuleKtProviderInitializer::class.members.map { it.name })
   println(ModuleKtProviderInitializer::class.java.methods.map { it.name })
 

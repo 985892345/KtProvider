@@ -1,21 +1,23 @@
 package com.g985892345.provider.plugin.kcp.ir.body.impl
 
 import com.g985892345.provider.plugin.kcp.cache.IrClassCacheData
-import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.ImplCacheManager
-import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.ImplProviderArg
-import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.toImplProviderArg
+import com.g985892345.provider.plugin.kcp.ir.body.BaseClazzNameProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.utils.ClazzNameCacheManager
+import com.g985892345.provider.plugin.kcp.ir.body.utils.ClazzNameProviderArg
+import com.g985892345.provider.plugin.kcp.ir.body.utils.toClazzNameProviderArg
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
 import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.isClass
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
-import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -33,31 +35,31 @@ import org.jetbrains.kotlin.name.Name
  * .
  *
  * @author 985892345
- * 2023/6/15 14:57
+ * 2023/6/15 15:48
  */
-class NewImplProviderHandler(
+class ImplProviderHandler(
   data: KtProviderData
-) : BaseImplProviderHandler(data) {
+) : BaseClazzNameProviderHandler(data) {
   
-  private val mCacheManager = ImplCacheManager(
-    data.cacheManagerDir.resolveFile("NewImplProviderCache.json")
+  private val mCacheManager = ClazzNameCacheManager(
+    data.cacheManagerDir.resolveFile("ImplProviderCache.json")
   )
   
-  private val newImplProviderAnnotation = FqName("com.g985892345.provider.annotation.NewImplProvider")
-  private val mGenerateArgByIrClass = LinkedHashMap<ClassId, Pair<IrClass, List<ImplProviderArg>>>()
+  private val singleImplProviderAnnotation = FqName("com.g985892345.provider.annotation.ImplProvider")
+  private val mGenerateArgByClassId = LinkedHashMap<ClassId, Pair<IrClass, List<ClazzNameProviderArg>>>()
   
   override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
     super.init(pluginContext, moduleFragment)
-    mGenerateArgByIrClass.clear()
+    mGenerateArgByClassId.clear()
     // 加载缓存
     mCacheManager.get()
       .mapNotNull { data ->
         pluginContext.referenceClass(data.impl.classId)?.let { it to data }
       }
       .forEach {
-        messageCollector.log("NewImplProviderCache: class=${it.first.owner.location}")
+        messageCollector.log("ImplProviderCache: class=${it.first.owner.location}")
         val classId = it.first.owner.classId!!
-        mGenerateArgByIrClass[classId] = it.first.owner to it.second.toImplProviderArg(pluginContext)
+        mGenerateArgByClassId[classId] = it.first.owner to it.second.toClazzNameProviderArg(pluginContext)
       }
   }
   
@@ -65,19 +67,19 @@ class NewImplProviderHandler(
     val classId = irClass.classId ?: return
     val kind = irClass.kind
     val modality = irClass.modality
-    // 普通 class
-    if (kind.isClass && (modality == Modality.OPEN || modality == Modality.FINAL)) {
+    // 普通 class 和 object 单例
+    if (kind.isClass && (modality == Modality.OPEN || modality == Modality.FINAL) || kind.isObject) {
       val annotations = irClass.annotations.mapNotNull {
-        if (it.isAnnotation(newImplProviderAnnotation)) it else null
+        if (it.isAnnotation(singleImplProviderAnnotation)) it else null
       }
       if (annotations.isNotEmpty()) {
         // 如果 classId 相同，这里会覆盖掉缓存
-        mGenerateArgByIrClass[classId] = irClass to annotations.map {
+        mGenerateArgByClassId[classId] = irClass to annotations.map {
           getImplProviderArg(irClass, it)
         }
       } else {
         // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
-        mGenerateArgByIrClass.remove(classId)
+        mGenerateArgByClassId.remove(classId)
       }
     }
   }
@@ -89,28 +91,30 @@ class NewImplProviderHandler(
     ktProviderInitializer: IrClassSymbol,
     ktProviderInitializerImpl: IrClass
   ) {
+    messageCollector.log("generateCode")
     val superClassFunction = ktProviderInitializer.owner
       .functions
       .single {
-        it.name.asString() == "addNewImplProvider"
+        it.name.asString() == "addImplProvider"
       }
     val implProviderFunction = ktProviderInitializerImpl.functions
       .single {
         it.overrides(superClassFunction)
       }
-    mGenerateArgByIrClass.forEach { entry ->
+    
+    mGenerateArgByClassId.forEach { entry ->
       val irClass = entry.value.first
       entry.value.second.forEach {
-        messageCollector.log("@NewImplProvider: ${irClass.location} -> (${it.msg})")
-        val emptyConstructor = checkEmptyConstructor(irClass)
-        +irAddNewImplProvider(pluginContext, it, emptyConstructor, initImplFunction, implProviderFunction)
+        messageCollector.log("@ImplProvider: ${irClass.location} -> (${it.msg})")
+        checkEmptyConstructor(irClass)
+        +irAddSingleImplProvider(pluginContext, it, irClass, initImplFunction, implProviderFunction)
       }
     }
     
     // 保存进缓存
     mCacheManager.put(
-      mGenerateArgByIrClass.map { entry ->
-        ImplCacheManager.ImplCacheData(
+      mGenerateArgByClassId.map { entry ->
+        ClazzNameCacheManager.ClazzNameCacheData(
           IrClassCacheData(entry.key),
           entry.value.second.map { arg ->
             arg.irClass?.classId?.let { IrClassCacheData(it) } to arg.name
@@ -120,10 +124,10 @@ class NewImplProviderHandler(
     )
   }
   
-  private fun IrBuilderWithScope.irAddNewImplProvider(
+  private fun IrBuilderWithScope.irAddSingleImplProvider(
     pluginContext: IrPluginContext,
-    arg: ImplProviderArg,
-    emptyConstructor: IrConstructor,
+    arg: ClazzNameProviderArg,
+    irClass: IrClass,
     initImplFunction: IrSimpleFunction,
     implProviderFunction: IrSimpleFunction
   ): IrExpression {
@@ -157,7 +161,11 @@ class NewImplProviderHandler(
             lambda.setDeclarationsParent(initImplFunction)
             lambda.body = DeclarationIrBuilder(pluginContext, lambda.symbol).irBlockBody {
               +irReturn(
-                irCall(emptyConstructor)
+                if (irClass.isObject) {
+                  irGetObject(irClass.symbol)
+                } else {
+                  irCall(irClass.constructors.single { it.valueParameters.isEmpty() })
+                }
               )
             }
           },

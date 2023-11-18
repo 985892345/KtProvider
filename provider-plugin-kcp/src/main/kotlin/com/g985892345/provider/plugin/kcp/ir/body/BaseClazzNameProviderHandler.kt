@@ -1,7 +1,6 @@
-package com.g985892345.provider.plugin.kcp.ir.body.impl
+package com.g985892345.provider.plugin.kcp.ir.body
 
-import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
-import com.g985892345.provider.plugin.kcp.ir.body.impl.utils.ImplProviderArg
+import com.g985892345.provider.plugin.kcp.ir.body.utils.ClazzNameProviderArg
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
 import com.g985892345.provider.plugin.kcp.ir.utils.location
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -27,7 +26,7 @@ import org.jetbrains.kotlin.name.Name
  * @author 985892345
  * 2023/7/21 22:38
  */
-abstract class BaseImplProviderHandler(
+abstract class BaseClazzNameProviderHandler(
   val data: KtProviderData
 ) : ProviderHandler {
   
@@ -55,10 +54,11 @@ abstract class BaseImplProviderHandler(
   protected fun getImplProviderArg(
     irClass: IrClass,
     annotation: IrConstructorCall
-  ): ImplProviderArg {
+  ): ClazzNameProviderArg {
     val location = irClass.location
     // 获取 clazz 参数
     var clazz = annotation.getValueArgument(clazzArg) as IrClassReference?
+    // 检查实现类
     checkImpl(irClass, clazz)
     // 获取 name 参数
     val name = (annotation.getValueArgument(nameArg) as IrConst<String>?)?.value
@@ -85,9 +85,9 @@ abstract class BaseImplProviderHandler(
         throw IllegalArgumentException("在不设置 clazz 时 name 不能为空串!   位置：$location")
       }
     }
-    val arg = ImplProviderArg(clazz, name)
+    val arg = ClazzNameProviderArg(clazz, name)
     // 检查是否重复
-    putAndCheckUniqueImplKey(arg.msg, location)
+    putAndCheckUniqueImplKey(arg.msg + this::class.qualifiedName, location)
     return arg
   }
   

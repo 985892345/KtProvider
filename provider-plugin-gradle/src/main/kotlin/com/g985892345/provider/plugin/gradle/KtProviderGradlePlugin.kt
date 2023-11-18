@@ -31,6 +31,7 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
       mutableListOf<SubpluginOption>().apply {
         add(SubpluginOption("isCheckImpl", isCheckImpl))
         add(SubpluginOption("cachePath", ktProviderExtension.cachePath.get().asFile.path))
+        add(SubpluginOption("initializerClass", KtProviderExtensions.getInitializerClass(project)))
       }
     }
   }
@@ -50,6 +51,6 @@ class KtProviderGradlePlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
     val project = kotlinCompilation.target.project
     val ktProviderExtension = project.extensions.getByType(KtProviderExtensions::class.java)
-    return ktProviderExtension.isApplyKcp
+    return ktProviderExtension.enableKcp
   }
 }

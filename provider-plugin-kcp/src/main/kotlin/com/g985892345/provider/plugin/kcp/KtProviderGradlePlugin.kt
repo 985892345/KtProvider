@@ -21,9 +21,11 @@ class KtProviderGradlePlugin : CommandLineProcessor {
   companion object {
     private const val OPTION_IS_CHECK_IMPL = "isCheckImpl"
     private const val OPTION_CACHE_PATH = "cachePath"
+    private const val OPTION_INITIALIZER_CLASS = "initializerClass"
     
     val ARG_IS_CHECK_IMPL = CompilerConfigurationKey<Boolean>(OPTION_IS_CHECK_IMPL)
     val ARG_CACHE_PATH = CompilerConfigurationKey<File>(OPTION_CACHE_PATH)
+    val ARG_INITIALIZER_CLASS = CompilerConfigurationKey<String>(OPTION_INITIALIZER_CLASS)
   }
   override val pluginId: String = BuildConfig.PLUGIN_ID
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
@@ -39,12 +41,19 @@ class KtProviderGradlePlugin : CommandLineProcessor {
       description = "缓存目录的路径，用于保存开启增量编译后需要编译信息",
       required = true
     ),
+    CliOption(
+      optionName = OPTION_INITIALIZER_CLASS,
+      valueDescription = "String",
+      description = "KtProviderInitializer 的实现类全称，用于 ir 插桩",
+      required = true
+    ),
   )
   
   override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {
     when (option.optionName) {
       OPTION_IS_CHECK_IMPL -> configuration.put(ARG_IS_CHECK_IMPL, value.toBooleanStrictOrNull() ?: true)
       OPTION_CACHE_PATH -> configuration.put(ARG_CACHE_PATH, File(value))
+      OPTION_INITIALIZER_CLASS -> configuration.put(ARG_INITIALIZER_CLASS, value)
     }
   }
 }

@@ -91,24 +91,23 @@ plugins {
 }
 
 ktProvider {
-  // 可以设置一些东西
+  // 可以设置一些东西，比如设置 KtProviderInitializer 实现类的代理类
 }
 ```
 #### 代码中
 ```kotlin
 // 打上注解
-@NewImplProvider(clazz = ITestService::class, name = "test") // class 与 name 必须包含一个
+@ImplProvider(clazz = ITestService::class, name = "test") // class 与 name 必须包含一个
 class TestServiceImpl : ITestService {
   override fun get(): String {
     return "123"
   }
 }
 ```
-| 注解                 | 作用            |                                            |
-|--------------------|---------------|--------------------------------------------|
-| NewImplProvider    | 每次获取都是新的实例    |                                            |
-| SingleImplProvider | 每次获取都是单例      | 依靠 kt 的 lazy 实现线程安全                        |
-| KClassProvider     | 获取实现类的 KClass | 封装一下就可用于获取 Android 中的 Class\<out Activity> |
+| 注解              | 作用            |                                            |
+|-----------------|---------------|--------------------------------------------|
+| ImplProvider    | 每次获取都是新的实例    |                                            |
+| KClassProvider  | 获取实现类的 KClass | 封装一下就可用于获取 Android 中的 Class\<out Activity> |
 
 
 
@@ -138,13 +137,13 @@ println(service.get())
 ## 实现原理
 ### ir 查桩
 基于 Kotlin Compile Plugin 中的 ir 插桩，寻找启动模块依赖的所有模块中包含有对应注解的类，
-然后添加到 `KtProviderInitializer` 实现类的 `initKtProvider` 方法下  
+然后添加到 `KtProviderInitializer` 实现类的 `initAddAllProvider` 方法下  
 类似于如下代码:
 ```kotlin
 object KtProvider : KtProviderInitializer() {
-  // 如果没有重写 initKtProvider 方法，则会自动重写
+  // 如果没有重写 initAddAllProvider 方法，则会自动重写
   // 如果已经重写，则在方法体的第一行插入 _initImpl()
-  override fun initKtProvider() {
+  override fun initAddAllProvider() {
     _initImpl() // 先调用 _initImpl 方法进行初始化
     // ... 后面是你重写的内容
   }
@@ -162,15 +161,7 @@ object KtProvider : KtProviderInitializer() {
 KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
 然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
 （但只允许 implementation、api 依赖其他模块）  
-所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由  
-```kotlin
-// build.gradle.kts
-ktProvider {
-  // ktProvider 闭包中设置在 initKtProvider() 中调用自己类的方法
-  beforeInitProvider(/*...*/) // 在 initProvider() 方法体开头插入方法
-  afterInitProvider(/*...*/) // 在 initProvider() 方法体末尾插入方法
-}
-```
+所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由
 
 
 ## 自定义封装

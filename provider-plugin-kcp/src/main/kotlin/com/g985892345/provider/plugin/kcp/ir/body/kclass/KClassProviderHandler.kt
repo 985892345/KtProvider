@@ -1,9 +1,12 @@
 package com.g985892345.provider.plugin.kcp.ir.body.kclass
 
 import com.g985892345.provider.plugin.kcp.cache.IrClassCacheData
-import com.g985892345.provider.plugin.kcp.ir.body.ProviderHandler
-import com.g985892345.provider.plugin.kcp.ir.body.kclass.utils.KClassCacheManager
+import com.g985892345.provider.plugin.kcp.ir.body.BaseClazzNameProviderHandler
+import com.g985892345.provider.plugin.kcp.ir.body.utils.ClazzNameCacheManager
+import com.g985892345.provider.plugin.kcp.ir.body.utils.ClazzNameProviderArg
+import com.g985892345.provider.plugin.kcp.ir.body.utils.toClazzNameProviderArg
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
+import com.g985892345.provider.plugin.kcp.ir.utils.location
 import com.g985892345.provider.plugin.kcp.ir.utils.log
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -14,13 +17,10 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.starProjectedType
@@ -38,27 +38,27 @@ import org.jetbrains.kotlin.name.Name
  */
 class KClassProviderHandler(
   data: KtProviderData
-) : ProviderHandler {
+) : BaseClazzNameProviderHandler(data) {
   
-  private val mCacheManager = KClassCacheManager(
+  private val mCacheManager = ClazzNameCacheManager(
     data.cacheManagerDir.resolveFile("KClassProviderCache.json")
   )
   
-  private val messageCollector = data.message
   private val kClassProviderAnnotation = FqName("com.g985892345.provider.annotation.KClassProvider")
-  private val mGenerateArgByClassId = LinkedHashMap<ClassId, Pair<IrClass, List<String>>>()
+  private val mGenerateArgByClassId = LinkedHashMap<ClassId, Pair<IrClass, List<ClazzNameProviderArg>>>()
   
   override fun init(pluginContext: IrPluginContext, moduleFragment: IrModuleFragment) {
+    super.init(pluginContext, moduleFragment)
     mGenerateArgByClassId.clear()
     // 加载缓存
     mCacheManager.get()
       .mapNotNull { data ->
-        pluginContext.referenceClass(data.impl.classId)?.let { it to data.names }
+        pluginContext.referenceClass(data.impl.classId)?.let { it to data }
       }
       .forEach {
         messageCollector.log("KClassProviderCache: class=${it.first.owner.location}")
         val classId = it.first.owner.classId!!
-        mGenerateArgByClassId[classId] = it.first.owner to it.second
+        mGenerateArgByClassId[classId] = it.first.owner to it.second.toClazzNameProviderArg(pluginContext)
       }
   }
   
@@ -71,8 +71,7 @@ class KClassProviderHandler(
       if (annotations.isNotEmpty()) {
         // 如果 classId 相同，这里会覆盖掉缓存
         mGenerateArgByClassId[classId] = irClass to annotations.map {
-          @Suppress("UNCHECKED_CAST")
-          (it.getValueArgument(0) as IrConst<String>).value
+          getImplProviderArg(irClass, it)
         }
       } else {
         // 如果 annotations 为空了，mIrClassWithAnnotation 仍包含 classId，说明是缓存添加的, 所以尝试移除 classId
@@ -99,20 +98,20 @@ class KClassProviderHandler(
       }
     mGenerateArgByClassId.forEach { entry ->
       val irClass = entry.value.first
-      entry.value.second.forEach { name ->
-        val key = getKey(irClass, name)
-        putAndCheckUniqueKClassKey(key, irClass.location)
-        messageCollector.log("@KClassProvider: $irClass.location")
-        +irAddKClassProvider(pluginContext, key, irClass.symbol, initImplFunction, addKClassProviderFunction)
+      entry.value.second.forEach {
+        messageCollector.log("@KClassProvider: $irClass.location -> (${it.msg})")
+        +irAddKClassProvider(pluginContext, it, irClass.symbol, initImplFunction, addKClassProviderFunction)
       }
     }
     
     // 保存进缓存
     mCacheManager.put(
-      mGenerateArgByClassId.map {
-        KClassCacheManager.KClassCacheData(
-          IrClassCacheData(it.key),
-          it.value.second
+      mGenerateArgByClassId.map { entry ->
+        ClazzNameCacheManager.ClazzNameCacheData(
+          IrClassCacheData(entry.key),
+          entry.value.second.map { arg ->
+            arg.irClass?.classId?.let { IrClassCacheData(it) } to arg.name
+          }
         )
       }
     )
@@ -120,17 +119,28 @@ class KClassProviderHandler(
   
   private fun IrBuilderWithScope.irAddKClassProvider(
     pluginContext: IrPluginContext,
-    key: String,
+    arg: ClazzNameProviderArg,
     classSymbol: IrClassSymbol,
     initImplFunction: IrSimpleFunction,
     addKClassProviderFunction: IrSimpleFunction,
   ): IrExpression {
     return irCall(addKClassProviderFunction).also { call ->
       call.dispatchReceiver = irGet(initImplFunction.dispatchReceiverParameter!!)
-      val nameStr = key.toIrConst(pluginContext.irBuiltIns.stringType)
-      call.putValueArgument(0, nameStr)
+      // 添加 KClass 参数
+      // classReference 为 null 时默认填充 Nothing::class，因为 Nothing 无实现类
       call.putValueArgument(
-        1,
+        0,
+        arg.classReference ?: IrClassReferenceImpl(
+          startOffset, endOffset,
+          context.irBuiltIns.kClassClass.starProjectedType,
+          context.irBuiltIns.kClassClass,
+          nothingSymbol.defaultType
+        )
+      )
+      // 添加 name 参数
+      call.putValueArgument(1, irString(arg.name ?: ""))
+      call.putValueArgument(
+        2,
         IrFunctionExpressionImpl(
           startOffset, endOffset,
           pluginContext.irBuiltIns.functionN(0).typeWith(pluginContext.irBuiltIns.kClassClass.starProjectedType),
@@ -155,33 +165,6 @@ class KClassProviderHandler(
           IrStatementOrigin.LAMBDA
         )
       )
-    }
-  }
-  
-  private fun getKey(irClass: IrClass, name: String?): String {
-    if (name == null) {
-      throw IllegalArgumentException("必须设置 name!   class=${irClass.location}")
-    } else if (name.isEmpty()) {
-      throw IllegalArgumentException("name 不能为空串!   class=${irClass.location}")
-    }
-    return name
-  }
-  
-  private val IrClass.location: String
-    get() = classId!!.asFqNameString()
-  
-  companion object {
-    private val UniqueKey = hashMapOf<String, String>()
-    
-    fun putAndCheckUniqueKClassKey(key: String, locationMsg: String) {
-      val lastLocationMsg = UniqueKey[key]
-      if (lastLocationMsg != null) {
-        throw IllegalArgumentException(
-          "包含重复的声明: $key\n位置1: $lastLocationMsg\n位置2: $locationMsg"
-        )
-      } else {
-        UniqueKey[key] = locationMsg
-      }
     }
   }
 }
