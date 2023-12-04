@@ -63,18 +63,20 @@ class KtProviderInitializerGenerator(
       task.group = "ktProvider"
       if (ktProviderExtension.enableKcp) {
         // 如果需要 ir 插桩，则需要解决 compileKotlin 任务的缓存问题
-        // 以下写法将该 task 的缓存跟整个 main 源集内的代码相关联，
+        // 以下写法将该 task 的缓存跟全部源集内的代码相关联，
         // 如果模块内代码有改动，则重新生成 KtProviderInitializer 实现类
         // 如果不重新生成，则会导致 compileKotlin 不会重新构建该类，导致 ir 插桩失败
         project.extensions
           .getByType(KotlinSourceSetContainer::class.java)
           .sourceSets
-          .getByName("main")
-          .kotlin
-          .srcDirs
-          .filter { it.exists() }
-          .forEach {
-            task.inputs.dir(it)
+          .filter { ktProviderExtension.sourceSet.isEmpty() || it.name in ktProviderExtension.sourceSet }
+          .forEach { sourceSet ->
+            sourceSet.kotlin
+              .srcDirs
+              .filter { it.exists() }
+              .forEach {
+                task.inputs.dir(it)
+              }
           }
       }
       val dependModuleProjects = getDependModulePaths()
@@ -102,17 +104,17 @@ class KtProviderInitializerGenerator(
     project.extensions
       .getByType(KotlinSourceSetContainer::class.java)
       .sourceSets
-      .getByName("main")
-      .kotlin
-      .srcDir(taskProvider)
+      .configureEach {
+        it.kotlin.srcDirs(taskProvider)
+      }
   }
   
   // 获取依赖的所有模块 path
   private fun getDependModulePaths(): List<Project> {
     val dependProjects = mutableListOf<Project>()
     listOf(
+      "api",
       "implementation",
-      "api"
     ).map { project.configurations.getByName(it) }.forEach { config ->
       config.dependencies.forEach { dependency ->
         if (dependency is ProjectDependency) {

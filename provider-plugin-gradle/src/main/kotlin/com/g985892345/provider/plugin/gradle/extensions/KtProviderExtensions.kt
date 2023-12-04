@@ -19,6 +19,11 @@ abstract class KtProviderExtensions(private val project: Project) {
   var enableKcp = true
   
   /**
+   * 设置 sourceSet，会根据该设置对源集中的代码进行监听，如果存在改动，则会重新生成 KtProviderInitializer 实现类触发 ir 插桩
+   */
+  var sourceSet = emptyList<String>()
+  
+  /**
    * KtProviderInitializerClass 的代理类
    *
    * 设置后自动生成的 KtProviderInitializer 实现类将调用代理类的方法

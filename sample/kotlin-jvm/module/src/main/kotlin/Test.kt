@@ -16,11 +16,10 @@ fun main() {
   val kClass = KtProviderManager.getKClassOrThrow<ITestService>("class")
   println(kClass)
   val allImplList = KtProviderManager.getAllImpl(ITestService::class)
-  println("$allImplList -> ${allImplList.map { it.value.get() }}")
+  println("allImplList: $allImplList -> ${allImplList.map { it.value.get() }}")
   val kClassList = KtProviderManager.getAllKClass(ITestService::class)
-  println("$kClassList -> ${kClassList.map { it.value.get() }}")
+  println("kClassList: $kClassList -> ${kClassList.map { it.value.get() }}")
   println(ModuleKtProviderInitializer::class.members.map { it.name })
-  println(ModuleKtProviderInitializer::class.java.methods.map { it.name })
 
   println()
 }

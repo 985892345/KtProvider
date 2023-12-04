@@ -4,7 +4,6 @@ import com.g985892345.provider.plugin.kcp.ir.body.utils.ClazzNameProviderArg
 import com.g985892345.provider.plugin.kcp.ir.entry.KtProviderData
 import com.g985892345.provider.plugin.kcp.ir.utils.location
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.jvm.ir.getValueArgument
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor

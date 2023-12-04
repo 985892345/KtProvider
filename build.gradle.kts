@@ -1,7 +1,7 @@
 plugins {
-  kotlin("multiplatform") version "1.9.10" apply false
-  kotlin("jvm") version "1.9.10" apply false
-  kotlin("plugin.serialization") version "1.9.10" apply false
+  kotlin("multiplatform") version "1.9.20" apply false
+  kotlin("jvm") version "1.9.20" apply false
+  kotlin("plugin.serialization") version "1.9.20" apply false
   id("com.github.gmazzo.buildconfig") version "4.0.4" apply false
   id("io.github.985892345.KtProvider") version "1.2.0-alpha07-SNAPSHOT" apply false // 测试时记得改这里的版本号
 }
