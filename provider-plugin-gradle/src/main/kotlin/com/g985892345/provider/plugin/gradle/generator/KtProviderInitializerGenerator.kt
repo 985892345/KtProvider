@@ -2,6 +2,7 @@ package com.g985892345.provider.plugin.gradle.generator
 
 import com.g985892345.provider.plugin.gradle.BuildConfig
 import com.g985892345.provider.plugin.gradle.extensions.KtProviderExtensions
+import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.*
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.tasks.SourceSet
@@ -53,47 +54,36 @@ class KtProviderInitializerGenerator(
       "implementation",
       "io.github.985892345:provider-annotation:${BuildConfig.VERSION}"
     )
+    project.dependencies.add(
+      "ksp",
+      "io.github.985892345:provider-compile-ksp:${BuildConfig.VERSION}"
+    )
   }
   
   // 生成 KtProviderInitializer 的实现类并加入编译环境
   private fun configCreateKtProviderTask(): TaskProvider<Task> {
-    val ktProviderExtension = project.extensions.getByType(KtProviderExtensions::class.java)
+    val ktProviderRouterPackageName = KtProviderExtensions.getPackageName(project)
+    val ktProviderRouterClassName = "${KtProviderExtensions.getClassNameSuffix(project)}KtProviderRouter"
+    project.extensions.configure(KspExtension::class.java) {
+      it.arg("ktProviderRouterPackageName", ktProviderRouterPackageName)
+      it.arg("ktProviderRouterClassName", ktProviderRouterClassName)
+    }
     // 生成 KtProviderInitializer 的实现类
     return project.tasks.register(taskName) { task ->
       task.group = "ktProvider"
-      if (ktProviderExtension.enableKcp) {
-        // 如果需要 ir 插桩，则需要解决 compileKotlin 任务的缓存问题
-        // 以下写法将该 task 的缓存跟全部源集内的代码相关联，
-        // 如果模块内代码有改动，则重新生成 KtProviderInitializer 实现类
-        // 如果不重新生成，则会导致 compileKotlin 不会重新构建该类，导致 ir 插桩失败
-        project.extensions
-          .getByType(KotlinSourceSetContainer::class.java)
-          .sourceSets
-          .filter { ktProviderExtension.sourceSet.isEmpty() || it.name in ktProviderExtension.sourceSet }
-          .forEach { sourceSet ->
-            sourceSet.kotlin
-              .srcDirs
-              .filter { it.exists() }
-              .forEach {
-                task.inputs.dir(it)
-              }
-          }
-      }
       val dependModuleProjects = getDependModulePaths()
-      val delegate = ktProviderExtension.delegateClass
       task.inputs.property("dependModulePaths", dependModuleProjects.map { it.path })
-      task.inputs.property("delegate", delegate ?: "")
       task.outputs.dir(ktProviderSource)
       task.doLast {
         val selfInitializerClass = KtProviderExtensions.getInitializerClass(project)
         val text = getKtProviderInitializerTemplate(
           selfInitializerClass,
+          "$ktProviderRouterPackageName.$ktProviderRouterClassName",
           dependModuleProjects.filter { dependProject ->
             dependProject.extensions.findByType(KtProviderExtensions::class.java) != null
           }.map { dependProject ->
             KtProviderExtensions.getInitializerClass(dependProject)
           },
-          delegate
         )
         outputFile(selfInitializerClass, it.name, text)
       }
@@ -142,7 +132,6 @@ class KtProviderInitializerGenerator(
     ktProviderImplFile.createNewFile()
     ktProviderImplFile.writeText(
       "// 自动生成，task 为 $taskName \n" +
-          "// 时间戳: ${System.currentTimeMillis()} (用于构造不同的源文件，解决 compileKotlin 缓存问题) \n" +
           fileText
     )
   }
@@ -150,36 +139,20 @@ class KtProviderInitializerGenerator(
 
 private fun getKtProviderInitializerTemplate(
   selfInitializerClass: String,
+  ktProviderRouterClass: String,
   invokeInitializerClass: List<String>,
-  delegateClass: String?,
 ): String = """
   package ${selfInitializerClass.substringBeforeLast(".")}
   
   import com.g985892345.provider.init.KtProviderInitializer
-  import kotlin.reflect.KClass
+  import com.g985892345.provider.init.KtProviderRouter
   
   object ${selfInitializerClass.substringAfterLast(".")} : KtProviderInitializer() {
   
-    override fun initKtProvider() {
-      ${if (delegateClass != null) "$delegateClass.onSuperInitKtProviderBefore()" else ""}
-      super.initKtProvider()
-      ${if (delegateClass != null) "$delegateClass.onSuperInitKtProviderAfter()" else ""}
-    }
-  
-    override fun initAddAllProvider() {
-      super.initAddAllProvider()
-      ${if (delegateClass != null) "$delegateClass.onSelfAllProviderFinish()" else ""}
-      ${invokeInitializerClass.joinToString("\n      ") { "${it}.tryInitKtProvider()" }}
-    }
+    override val router: KtProviderRouter = $ktProviderRouterClass
     
-    override fun <T : Any> addImplProvider(clazz: KClass<T>, name: String, init: () -> T) {
-      ${if (delegateClass != null) "if ($delegateClass.onAddImplProvider(clazz, name, init)) super.addImplProvider(clazz, name, init)"
-        else "super.addImplProvider(clazz, name, init)"}
-    }
-    
-    override fun <T : Any> addKClassProvider(clazz: KClass<T>, name: String, init: () -> KClass<out T>) {
-      ${if (delegateClass != null) "if ($delegateClass.onAddKClassProvider(clazz, name, init)) super.addKClassProvider(clazz, name, init)"
-        else "super.addKClassProvider(clazz, name, init)"}
-    }
+    override val otherModuleKtProvider: List<KtProviderInitializer> = listOf(
+      ${invokeInitializerClass.joinToString(",\n      ")}
+    )
   }
 """.trimIndent()

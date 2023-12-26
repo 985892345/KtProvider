@@ -1,5 +1,6 @@
 plugins {
   kotlin("jvm")
+  id("com.google.devtools.ksp")
   id("io.github.985892345.KtProvider")
 }
 

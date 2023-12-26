@@ -1,6 +1,6 @@
 package com.g985892345.provider.manager
 
-import com.g985892345.provider.init.KtProviderInitializer
+import com.g985892345.provider.init.IKtProviderDelegate
 import com.g985892345.provider.init.wrapper.ImplProviderWrapper
 import com.g985892345.provider.init.wrapper.KClassProviderWrapper
 import kotlin.reflect.KClass
@@ -56,7 +56,7 @@ object KtProviderManager {
    */
   @Suppress("UNCHECKED_CAST")
   fun <T : Any> getAllImpl(clazz: KClass<out T>?): Map<String, ImplProviderWrapper<T>> {
-    return KtProviderInitializer.ImplProviderMap[clazz ?: Nothing::class]
+    return IKtProviderDelegate.ImplProviderMap[clazz ?: Nothing::class]
       ?.mapValues { it.value as ImplProviderWrapper<T> }
       ?: emptyMap()
   }
@@ -100,7 +100,7 @@ object KtProviderManager {
    */
   @Suppress("UNCHECKED_CAST")
   fun <T : Any> getAllKClass(clazz: KClass<out T>?): Map<String, KClassProviderWrapper<T>> {
-    return KtProviderInitializer.KClassProviderMap[clazz ?: Nothing::class]
+    return IKtProviderDelegate.KClassProviderMap[clazz ?: Nothing::class]
       ?.mapValues { it.value as KClassProviderWrapper<T> }
       ?: emptyMap()
   }
@@ -113,8 +113,7 @@ object KtProviderManager {
     if (clazz == null && name.isEmpty()) {
       throw IllegalArgumentException("必须包含 clazz 或者 name!")
     }
-    val clazz2 = clazz ?: Nothing::class
-    return KtProviderInitializer.ImplProviderMap[clazz2]?.get(name)?.get() as T?
+    return IKtProviderDelegate.ImplProviderMap[clazz]?.get(name)?.get() as T?
   }
   
   @Suppress("UNCHECKED_CAST")
@@ -125,7 +124,6 @@ object KtProviderManager {
     if (clazz == null && name.isEmpty()) {
       throw IllegalArgumentException("必须包含 clazz 或者 name!")
     }
-    val clazz2 = clazz ?: Nothing::class
-    return KtProviderInitializer.KClassProviderMap[clazz2]?.get(name)?.get() as KClass<out T>?
+    return IKtProviderDelegate.KClassProviderMap[clazz]?.get(name)?.get() as KClass<out T>?
   }
 }

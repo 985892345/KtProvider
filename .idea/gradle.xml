@@ -21,10 +21,10 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/provider-annotation" />
+            <option value="$PROJECT_DIR$/provider-compile-ksp" />
             <option value="$PROJECT_DIR$/provider-init" />
             <option value="$PROJECT_DIR$/provider-manager" />
             <option value="$PROJECT_DIR$/provider-plugin-gradle" />
-            <option value="$PROJECT_DIR$/provider-plugin-kcp" />
             <option value="$PROJECT_DIR$/sample" />
             <option value="$PROJECT_DIR$/sample/kotlin-jvm" />
             <option value="$PROJECT_DIR$/sample/kotlin-jvm/api" />
