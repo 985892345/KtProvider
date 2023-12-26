@@ -1,6 +1,14 @@
 plugins {
   kotlin("jvm")
   id("com.gradle.plugin-publish") version "1.2.1" // https://plugins.gradle.org/docs/publish-plugin
+  id("com.github.gmazzo.buildconfig")
+}
+
+buildConfig {
+  packageName("com.g985892345.provider.plugin.gradle")
+  buildConfigField("String", "VERSION", "\"${properties["VERSION"].toString()}\"")
+  buildConfigField("String", "GROUP", "\"${properties["GROUP"].toString()}\"")
+  buildConfigField("String", "PLUGIN_ID", "\"${properties["PLUGIN_ID"].toString()}\"")
 }
 
 dependencies {
@@ -47,7 +55,7 @@ publishing {
 // 补充 publishToMavenCentral task 用于一键发版
 tasks.create("publishToMavenCentral") {
   group = "publishing"
-  dependsOn(tasks.getByName("publishAllPublicationsToMavenCentralRepository"))
+  dependsOn(tasks.named("publishAllPublicationsToMavenCentralRepository"))
 }
 
 

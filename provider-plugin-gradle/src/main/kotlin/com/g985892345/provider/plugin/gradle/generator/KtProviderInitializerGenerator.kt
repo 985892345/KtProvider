@@ -4,6 +4,7 @@ import com.g985892345.provider.plugin.gradle.extensions.KtProviderExtensions
 import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.*
 import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.plugins.PluginContainer
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.configurationcache.extensions.capitalized
@@ -37,8 +38,41 @@ class KtProviderInitializerGenerator(
   private val taskName = getTaskName(project)
   
   fun config() {
+    val ktProvider = project.extensions.getByType(KtProviderExtensions::class.java)
+    configDependencies(ktProvider)
     val taskProvider = configCreateKtProviderTask()
     configSourceSetSrcDir(taskProvider)
+  }
+  
+  private fun configDependencies(ktProvider: KtProviderExtensions) {
+    project.plugins.withId("org.jetbrains.kotlin.multiplatform") {
+      project.extensions
+        .getByType(KotlinSourceSetContainer::class.java)
+        .sourceSets
+        .named("commonMain") {
+          it.dependencies {
+            implementation(ktProvider.api)
+          }
+        }
+    }
+    project.plugins.withAnyId(
+      "org.jetbrains.kotlin.android",
+      "org.jetbrains.kotlin.jvm",
+    ) {
+      project.dependencies.add(
+        "implementation",
+        ktProvider.api.replace("provider-api", "provider-api-jvm")
+      )
+    }
+    project.plugins.withAnyId(
+      "org.jetbrains.kotlin.js",
+      "kotlin2js",
+    ) {
+      project.dependencies.add(
+        "implementation",
+        ktProvider.api.replace("provider-api", "provider-api-js")
+      )
+    }
   }
   
   // 生成 KtProviderInitializer 的实现类并加入编译环境
@@ -72,12 +106,31 @@ class KtProviderInitializerGenerator(
   }
   
   private fun configSourceSetSrcDir(taskProvider: TaskProvider<Task>) {
-    project.extensions
-      .getByType(KotlinSourceSetContainer::class.java)
-      .sourceSets
-      .configureEach {
-        it.kotlin.srcDirs(taskProvider)
-      }
+    project.plugins.withId("org.jetbrains.kotlin.multiplatform") {
+      project.extensions
+        .getByType(KotlinSourceSetContainer::class.java)
+        .sourceSets
+        .named("commonMain") {
+          it.kotlin.srcDirs(taskProvider)
+        }
+    }
+    project.plugins.withAnyId(
+      "org.jetbrains.kotlin.android",
+      "org.jetbrains.kotlin.jvm",
+      "org.jetbrains.kotlin.js",
+      "kotlin2js",
+    ) {
+      project.extensions
+        .getByType(KotlinSourceSetContainer::class.java)
+        .sourceSets
+        .named("main") {
+          it.kotlin.srcDirs(taskProvider)
+        }
+    }
+  }
+  
+  private fun PluginContainer.withAnyId(vararg ids: String, action: Action<in Plugin<*>>) {
+    ids.forEach { withId(it, action) }
   }
   
   // 获取依赖的所有模块 path

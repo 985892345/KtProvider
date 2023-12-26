@@ -20,6 +20,10 @@ kotlin {
   mingwX64()
   @OptIn(ExperimentalWasmDsl::class)
   wasmJs()
+  js(IR) {
+    browser()
+    nodejs()
+  }
   
   sourceSets {
     val commonMain by getting {

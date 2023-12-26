@@ -1,5 +1,6 @@
 package com.g985892345.provider.plugin.gradle.extensions
 
+import com.g985892345.provider.plugin.gradle.BuildConfig
 import org.gradle.api.Project
 
 /**
@@ -9,6 +10,26 @@ import org.gradle.api.Project
  * 2023/6/18 12:36
  */
 abstract class KtProviderExtensions(private val project: Project) {
+  
+  /**
+   * 插件版本
+   */
+  val version = BuildConfig.VERSION
+  
+  /**
+   * 对应版本的 ksp 依赖
+   */
+  val ksp = "${BuildConfig.GROUP}:provider-compile-ksp:${version}"
+  
+  /**
+   * 对应版本的 provider-api 依赖，引入插件时已默认包含，无需再次依赖
+   */
+  val api = "${BuildConfig.GROUP}:provider-api:${version}"
+  
+  /**
+   * 对应版本的 provider-manager 依赖
+   */
+  val manager = "${BuildConfig.GROUP}:provider-manager:${version}"
   
   companion object {
     

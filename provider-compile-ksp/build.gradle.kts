@@ -24,3 +24,56 @@ dependencies {
   implementation("com.squareup:kotlinpoet:1.15.1")
   implementation("com.squareup:kotlinpoet-ksp:1.15.1")
 }
+
+afterEvaluate {
+  publishing {
+    publications {
+      val projectArtifactId = publish.artifactId
+      if (projectArtifactId.isEmpty()) {
+        throw IllegalArgumentException(
+          "artifactId 不能未空，请在 build.gradle.kts 中设置 plush.artifactId = \"...\""
+        )
+      }
+      val projectGithubName = publish.githubName
+      val projectDescription = publish.description
+      val projectMainBranch = publish.mainBranch
+      create<MavenPublication>("MavenCentral") {
+        groupId = publish.groupId
+        artifactId = projectArtifactId
+        version = publish.version
+        from(components["kotlin"])
+        signing {
+          sign(this@create)
+        }
+
+        pom {
+          name.set(projectArtifactId)
+          description.set(projectDescription)
+          url.set("https://github.com/985892345/$projectGithubName")
+
+          licenses {
+            license {
+              name.set("Apache-2.0 license")
+              url.set("https://github.com/985892345/$projectGithubName/blob/$projectMainBranch/LICENSE")
+            }
+          }
+
+          developers {
+            developer {
+              id.set("985892345")
+              name.set("GuoXiangrui")
+              email.set("guo985892345@formail.com")
+            }
+          }
+
+          scm {
+            connection.set("https://github.com/985892345/$projectGithubName.git")
+            developerConnection.set("https://github.com/985892345/$projectGithubName.git")
+            url.set("https://github.com/985892345/$projectGithubName")
+          }
+        }
+      }
+    }
+  }
+}
+

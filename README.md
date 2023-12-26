@@ -50,15 +50,6 @@ plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
-kotlin {
-  sourceSets {
-    commonMain.dependencies {
-      // provider-api 依赖
-      implementation("io.github.985892345:provider-api:x.y.z")
-    }
-  }
-}
-
 dependencies {
   // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
   val ktProviderKsp = "io.github.985892345:provider-compile-ksp:x.y.z"
@@ -70,8 +61,8 @@ dependencies {
   add("kspIosSimulatorArm64", ktProviderKsp)
   // ...
   
-  // provider-init 和 provider-annotation 依赖已随 gradle 插件一起添加
-  // // provider-manager 可选择性添加，详细请看后文
+  // provider-api 依赖已随 gradle 插件一起添加
+  // provider-manager 可选择性添加，详细请看后文
 }
 ```
 使用 KtProvider 插件后会自动生成一个 `KtProviderInitializer` 的实现类，
@@ -81,7 +72,8 @@ dependencies {
 ```kotlin
 // 然后在启动函数中进行加载
 fun main() {
-  // 调用自动生成的 XXXKtProviderInitializer
+  // 调用自动生成的 XXXKtProviderInitializer 
+  // 会在构建时自动生成，也可以直接调用 generateXXXKtProviderInitializerImpl gradle 任务直接生成
   // 该类名默认为 模块名+KtProviderInitializer，可在 ktProvider 闭包中设置
   XXXKtProviderInitializer.tryInitKtProvider()
 }
@@ -111,27 +103,18 @@ plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
-kotlin {
-  sourceSets {
-    commonMain.dependencies {
-      // provider-api 依赖
-      implementation("io.github.985892345:provider-api:x.y.z")
-    }
-  }
-}
-
 dependencies {
   // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
-  val ktProviderKsp = "io.github.985892345:provider-compile-ksp:x.y.z"
-  add("kspCommonMainMetadata", ktProviderKsp)
-  add("kspAndroid", ktProviderKsp)
-  add("kspDesktop", ktProviderKsp)
-  add("kspIosX64", ktProviderKsp)
-  add("kspIosArm64", ktProviderKsp)
-  add("kspIosSimulatorArm64", ktProviderKsp)
+  // ktProvider 的扩展中已经默认包含对应版本的 ksp 依赖，建议直接使用
+  add("kspCommonMainMetadata", ktProvider.ksp)
+  add("kspAndroid", ktProvider.ksp)
+  add("kspDesktop", ktProvider.ksp)
+  add("kspIosX64", ktProvider.ksp)
+  add("kspIosArm64", ktProvider.ksp)
+  add("kspIosSimulatorArm64", ktProvider.ksp)
   // ...
   
-  // provider-init 和 provider-annotation 依赖已随 gradle 插件一起添加
+  // provider-api 依赖已随 gradle 插件一起添加
   // provider-manager 可选择性添加，详细请看后文
 }
 ```
@@ -160,7 +143,8 @@ class TestServiceImpl : ITestService {
 kotlin {
   sourceSets {
     commonMain.dependencies {
-      implementation("io.github.985892345:provider-manager:x.y.z")
+      // ktProvider 的扩展中已经默认包含对应版本的 provider-manager 依赖，建议直接使用
+      implementation(ktProvider.manager)
     }
   }
 }
@@ -210,7 +194,8 @@ internal object ModuleKtProviderRouter : KtProviderRouter() {
 
 
 ## 自定义封装
-你可以不依赖 `provider-manager`，我只设计了服务提供框架的底层支持，你可以实现自己的 `KtProviderManager` 来扩展其他功能，具体实现逻辑请看源码
+`provider-manager` 可选择性依赖，我只设计了服务提供框架的底层支持，可以实现自己的 `KtProviderManager` 来扩展其他功能，
+具体实现逻辑请看 `provider-manager` 源码
 
 
 ## License
