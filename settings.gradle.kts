@@ -9,7 +9,8 @@ pluginManagement {
 }
 rootProject.name = "KtProvider"
 include("provider-plugin-gradle")
-include("provider-plugin-kcp")
+include("provider-compile-ksp")
+// include("provider-plugin-kcp")
 include("provider-manager")
 include("provider-annotation")
 include("provider-init")

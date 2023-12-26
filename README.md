@@ -48,10 +48,6 @@ repositories {
 plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
-
-ktProvider {
-  // 可以设置一些东西
-}
 ```
 使用 KtProvider 插件后会自动生成一个 `KtProviderInitializer` 的实现类，
 并且会根据该模块的依赖关系自动调用其他模块的 `tryInitKtProvider()` 方法
@@ -88,10 +84,6 @@ interface ITestService {
 ```kotlin
 plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
-}
-
-ktProvider {
-  // 可以设置一些东西，比如设置 KtProviderInitializer 实现类的代理类
 }
 ```
 #### 代码中
@@ -135,8 +127,14 @@ println(service.get())
 ```
 
 ## 实现原理
-### ir 查桩
-基于 Kotlin Compile Plugin 中的 ir 插桩，寻找启动模块依赖的所有模块中包含有对应注解的类，
+### 自动生成 KtProviderInitializer 实现类
+KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
+然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
+（但只允许 implementation、api 依赖其他模块）  
+所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由
+
+### KSP 解析模块内注解
+基于 KSP，解析模块内注解，并生成
 然后添加到 `KtProviderInitializer` 实现类的 `initAddAllProvider` 方法下  
 类似于如下代码:
 ```kotlin
@@ -157,11 +155,6 @@ object KtProvider : KtProviderInitializer() {
   }
 }
 ```
-### 自动生成 KtProviderInitializer 实现类
-KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
-然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
-（但只允许 implementation、api 依赖其他模块）  
-所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由
 
 
 ## 自定义封装

@@ -13,6 +13,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 
 dependencies {
   implementation(kotlin("gradle-plugin-api"))
+  compileOnly("com.google.devtools.ksp:symbol-processing-gradle-plugin:1.9.20-1.0.14")
 }
 
 version = properties["VERSION"].toString()
@@ -33,8 +34,8 @@ gradlePlugin {
       id = "io.github.985892345.KtProvider"
       implementationClass = "com.g985892345.provider.plugin.gradle.KtProviderGradlePlugin"
       displayName = "服务提供插件"
-      description = "本插件使用 Kotlin Compiler Plugin 进行 IR 插桩，实现服务提供"
-      tags.set(listOf("kotlin Multiplatform", "Kotlin Compiler Plugin", "Service Provider"))
+      description = "实现 KSP 实现的服务提供框架"
+      tags.set(listOf("kotlin Multiplatform", "KSP", "Service Provider"))
     }
   }
 }

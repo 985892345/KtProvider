@@ -1,3 +1,5 @@
+import com.ITestService
+import com.ITestService2
 import com.g985892345.provider.annotation.ImplProvider
 import com.g985892345.provider.ktprovider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
