@@ -21,42 +21,42 @@ afterEvaluate {
       val projectGithubName = publish.githubName
       val projectDescription = publish.description
       val projectMainBranch = publish.mainBranch
-      create<MavenPublication>("MavenCentral") {
-        groupId = publish.groupId
-        artifactId = projectArtifactId
-        version = publish.version
-        from(components["kotlin"])
-        signing {
-          sign(this@create)
-        }
-        
-        pom {
-          name.set(projectArtifactId)
-          description.set(projectDescription)
-          url.set("https://github.com/985892345/$projectGithubName")
-          
-          licenses {
-            license {
-              name.set("Apache-2.0 license")
-              url.set("https://github.com/985892345/$projectGithubName/blob/$projectMainBranch/LICENSE")
-            }
-          }
-          
-          developers {
-            developer {
-              id.set("985892345")
-              name.set("GuoXiangrui")
-              email.set("guo985892345@formail.com")
-            }
-          }
-          
-          scm {
-            connection.set("https://github.com/985892345/$projectGithubName.git")
-            developerConnection.set("https://github.com/985892345/$projectGithubName.git")
-            url.set("https://github.com/985892345/$projectGithubName")
-          }
-        }
-      }
+      // create<MavenPublication>("MavenCentral") {
+      //   groupId = publish.groupId
+      //   artifactId = projectArtifactId
+      //   version = publish.version
+      //   from(components["kotlin"])
+      //   signing {
+      //     sign(this@create)
+      //   }
+      //
+      //   pom {
+      //     name.set(projectArtifactId)
+      //     description.set(projectDescription)
+      //     url.set("https://github.com/985892345/$projectGithubName")
+      //
+      //     licenses {
+      //       license {
+      //         name.set("Apache-2.0 license")
+      //         url.set("https://github.com/985892345/$projectGithubName/blob/$projectMainBranch/LICENSE")
+      //       }
+      //     }
+      //
+      //     developers {
+      //       developer {
+      //         id.set("985892345")
+      //         name.set("GuoXiangrui")
+      //         email.set("guo985892345@formail.com")
+      //       }
+      //     }
+      //
+      //     scm {
+      //       connection.set("https://github.com/985892345/$projectGithubName.git")
+      //       developerConnection.set("https://github.com/985892345/$projectGithubName.git")
+      //       url.set("https://github.com/985892345/$projectGithubName")
+      //     }
+      //   }
+      // }
       repositories {
         maven {
           // https://s01.oss.sonatype.org/

@@ -1,6 +1,5 @@
 package com.g985892345.provider.plugin.gradle.generator
 
-import com.g985892345.provider.plugin.gradle.BuildConfig
 import com.g985892345.provider.plugin.gradle.extensions.KtProviderExtensions
 import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.*
@@ -38,26 +37,8 @@ class KtProviderInitializerGenerator(
   private val taskName = getTaskName(project)
   
   fun config() {
-    configDependencies()
     val taskProvider = configCreateKtProviderTask()
     configSourceSetSrcDir(taskProvider)
-  }
-  
-  private fun configDependencies() {
-    // 添加对 KtProviderInitializer 的依赖
-    project.dependencies.add(
-      "implementation",
-      "io.github.985892345:provider-init:${BuildConfig.VERSION}"
-    )
-    // 添加对 Provider 注解的依赖
-    project.dependencies.add(
-      "implementation",
-      "io.github.985892345:provider-annotation:${BuildConfig.VERSION}"
-    )
-    project.dependencies.add(
-      "ksp",
-      "io.github.985892345:provider-compile-ksp:${BuildConfig.VERSION}"
-    )
   }
   
   // 生成 KtProviderInitializer 的实现类并加入编译环境
@@ -144,8 +125,8 @@ private fun getKtProviderInitializerTemplate(
 ): String = """
   package ${selfInitializerClass.substringBeforeLast(".")}
   
-  import com.g985892345.provider.init.KtProviderInitializer
-  import com.g985892345.provider.init.KtProviderRouter
+  import com.g985892345.provider.api.init.KtProviderInitializer
+  import com.g985892345.provider.api.init.KtProviderRouter
   
   object ${selfInitializerClass.substringAfterLast(".")} : KtProviderInitializer() {
   

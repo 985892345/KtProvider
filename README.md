@@ -1,6 +1,6 @@
 # KtProvider
-![Maven Central](https://img.shields.io/maven-central/v/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=release)
-![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=SNAPSHOT)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.985892345/provider-api?server=https://s01.oss.sonatype.org&label=release)
+![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-api?server=https://s01.oss.sonatype.org&label=SNAPSHOT)
 
 支持 KMP 的跨模块服务提供轻量级框架  
 - 支持 KMP，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
@@ -48,6 +48,15 @@ repositories {
 ```kotlin
 plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
+}
+
+kotlin {
+  sourceSets {
+    commonMain.dependencies {
+      // provider-api 依赖
+      implementation("io.github.985892345:provider-api:x.y.z")
+    }
+  }
 }
 
 dependencies {
@@ -102,6 +111,15 @@ plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
+kotlin {
+  sourceSets {
+    commonMain.dependencies {
+      // provider-api 依赖
+      implementation("io.github.985892345:provider-api:x.y.z")
+    }
+  }
+}
+
 dependencies {
   // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
   val ktProviderKsp = "io.github.985892345:provider-compile-ksp:x.y.z"
@@ -139,13 +157,12 @@ class TestServiceImpl : ITestService {
 ```kotlin
 // 引入 provider-manager 依赖
 // 该依赖并不是必选项，你可以实现自己的服务管理者
-dependencies {
-  val krProviderVersion = "x.y.z"
-  // 如果你是 KMM 项目
-  implementation("io.github.985892345:provider-manager:$krProviderVersion")
-  
-  // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
-  implementation("io.github.985892345:provider-manager-jvm:$krProviderVersion")
+kotlin {
+  sourceSets {
+    commonMain.dependencies {
+      implementation("io.github.985892345:provider-manager:x.y.z")
+    }
+  }
 }
 ```
 #### 代码中
@@ -169,7 +186,7 @@ KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类
 类似于以下代码:
 ```kotlin
 // KtProviderInitializer 实现类
-object MainKtProviderInitializer : KtProviderInitializer() {
+object ModuleKtProviderInitializer : KtProviderInitializer() {
   
   override val router: KtProviderRouter = ModuleKtProviderRouter
   
@@ -193,9 +210,6 @@ internal object ModuleKtProviderRouter : KtProviderRouter() {
 
 
 ## 自定义封装
-  
-
-`io.github.985892345.KtProvider` 的 gradle 插件默认依赖了 `provider-init`、`provider-annotation`，
 你可以不依赖 `provider-manager`，我只设计了服务提供框架的底层支持，你可以实现自己的 `KtProviderManager` 来扩展其他功能，具体实现逻辑请看源码
 
 

@@ -1,4 +1,4 @@
-package com.g985892345.provider.init
+package com.g985892345.provider.api.init
 
 /**
  * 初始化服务

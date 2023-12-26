@@ -1,9 +1,9 @@
 package com.g985892345.provider.compile.ksp
 
-import com.g985892345.provider.annotation.ImplProvider
-import com.g985892345.provider.annotation.KClassProvider
-import com.g985892345.provider.init.IKtProviderDelegate
-import com.g985892345.provider.init.KtProviderRouter
+import com.g985892345.provider.api.annotation.ImplProvider
+import com.g985892345.provider.api.annotation.KClassProvider
+import com.g985892345.provider.api.init.IKtProviderDelegate
+import com.g985892345.provider.api.init.KtProviderRouter
 import com.google.devtools.ksp.*
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*

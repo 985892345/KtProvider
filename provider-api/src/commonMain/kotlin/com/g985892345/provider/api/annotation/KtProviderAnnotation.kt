@@ -1,4 +1,4 @@
-package com.g985892345.provider.annotation
+package com.g985892345.provider.api.annotation
 
 import kotlin.reflect.KClass
 

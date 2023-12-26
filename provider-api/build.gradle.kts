@@ -20,16 +20,8 @@ kotlin {
   mingwX64()
   @OptIn(ExperimentalWasmDsl::class)
   wasmJs()
-  
-  sourceSets {
-    val commonMain by getting {
-      dependencies {
-        implementation(project(":provider-api"))
-      }
-    }
-  }
 }
 
 publish {
-  artifactId = "provider-manager"
+  artifactId = "provider-api"
 }

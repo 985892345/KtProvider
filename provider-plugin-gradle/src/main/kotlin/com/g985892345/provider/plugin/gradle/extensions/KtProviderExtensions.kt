@@ -1,8 +1,6 @@
 package com.g985892345.provider.plugin.gradle.extensions
 
-import com.g985892345.provider.plugin.gradle.extensions.KtProviderExtensions.Companion.capitalized
 import org.gradle.api.Project
-import java.io.Serializable
 
 /**
  * .

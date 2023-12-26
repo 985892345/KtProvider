@@ -12,8 +12,7 @@ publish {
 }
 
 dependencies {
-  implementation(project(":provider-annotation"))
-  implementation(project(":provider-init"))
+  implementation(project(":provider-api"))
   
   // https://mvnrepository.com/artifact/com.google.auto.service/auto-service
   compileOnly("com.google.auto.service:auto-service:1.1.1")

@@ -1,4 +1,4 @@
-package com.g985892345.provider.init.wrapper
+package com.g985892345.provider.api.init.wrapper
 
 import kotlin.reflect.KClass
 

@@ -15,12 +15,5 @@ dependencies {
   implementation(rootProject.project("sample:kotlin-jvm:impl2"))
   
   val version = properties["VERSION"].toString()
-  implementation("io.github.985892345:provider-manager-jvm:$version")
-}
-
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-  kotlinOptions {
-    jvmTarget = "17"
-  }
+  implementation("io.github.985892345:provider-manager:$version")
 }

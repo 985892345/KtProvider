@@ -1,14 +1,6 @@
 plugins {
   kotlin("jvm")
   id("com.gradle.plugin-publish") version "1.2.1" // https://plugins.gradle.org/docs/publish-plugin
-  id("com.github.gmazzo.buildconfig")
-}
-
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-  kotlinOptions {
-    jvmTarget = "11"
-  }
 }
 
 dependencies {
@@ -18,13 +10,6 @@ dependencies {
 
 version = properties["VERSION"].toString()
 group = properties["GROUP"].toString()
-
-buildConfig {
-  packageName("com.g985892345.provider.plugin.gradle")
-  buildConfigField("String", "VERSION", "\"${properties["VERSION"].toString()}\"")
-  buildConfigField("String", "GROUP", "\"${properties["GROUP"].toString()}\"")
-  buildConfigField("String", "PLUGIN_ID", "\"${properties["PLUGIN_ID"].toString()}\"")
-}
 
 gradlePlugin {
   website.set("https://github.com/985892345/KtProvider")

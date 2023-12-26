@@ -1,8 +1,8 @@
 package com.g985892345.provider.manager
 
-import com.g985892345.provider.init.IKtProviderDelegate
-import com.g985892345.provider.init.wrapper.ImplProviderWrapper
-import com.g985892345.provider.init.wrapper.KClassProviderWrapper
+import com.g985892345.provider.api.init.IKtProviderDelegate
+import com.g985892345.provider.api.init.wrapper.ImplProviderWrapper
+import com.g985892345.provider.api.init.wrapper.KClassProviderWrapper
 import kotlin.reflect.KClass
 
 /**
