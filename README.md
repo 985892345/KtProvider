@@ -1,10 +1,11 @@
 # KtProvider
-![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=KtProvider-SNAPSHOT)  
-支持 KMP(KMM) 的跨模块服务提供轻量级框架  
-- 支持 KMP(KMM)，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
-- 支持 KMP(KMM) 的多模块工程 (jvm 和 Android 项目已通过测试)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=release)
+![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-init?server=https://s01.oss.sonatype.org&label=SNAPSHOT)
+
+支持 KMP 的跨模块服务提供轻量级框架  
+- 支持 KMP，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
+- 支持 KMP 的多模块工程 (jvm 和 Android 项目已通过测试)
 - 只提供底层支持，允许对服务管理者进一步封装
-- 支持增量编译
 
 ## 引入教程
 目前还处于测试阶段，未发布稳定包，请先设置 MavenCentral 快照仓库后进行依赖
@@ -48,6 +49,21 @@ repositories {
 plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
+
+dependencies {
+  // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
+  val ktProviderKsp = "io.github.985892345:provider-compile-ksp:x.y.z"
+  add("kspCommonMainMetadata", ktProviderKsp)
+  add("kspAndroid", ktProviderKsp)
+  add("kspDesktop", ktProviderKsp)
+  add("kspIosX64", ktProviderKsp)
+  add("kspIosArm64", ktProviderKsp)
+  add("kspIosSimulatorArm64", ktProviderKsp)
+  // ...
+  
+  // provider-init 和 provider-annotation 依赖已随 gradle 插件一起添加
+  // // provider-manager 可选择性添加，详细请看后文
+}
 ```
 使用 KtProvider 插件后会自动生成一个 `KtProviderInitializer` 的实现类，
 并且会根据该模块的依赖关系自动调用其他模块的 `tryInitKtProvider()` 方法
@@ -85,6 +101,21 @@ interface ITestService {
 plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
+
+dependencies {
+  // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
+  val ktProviderKsp = "io.github.985892345:provider-compile-ksp:x.y.z"
+  add("kspCommonMainMetadata", ktProviderKsp)
+  add("kspAndroid", ktProviderKsp)
+  add("kspDesktop", ktProviderKsp)
+  add("kspIosX64", ktProviderKsp)
+  add("kspIosArm64", ktProviderKsp)
+  add("kspIosSimulatorArm64", ktProviderKsp)
+  // ...
+  
+  // provider-init 和 provider-annotation 依赖已随 gradle 插件一起添加
+  // provider-manager 可选择性添加，详细请看后文
+}
 ```
 #### 代码中
 ```kotlin
@@ -115,13 +146,11 @@ dependencies {
   
   // 如果你只是 Kotlin/Jvm 项目（比如 Android 项目），只需要依赖 -jvm 即可
   implementation("io.github.985892345:provider-manager-jvm:$krProviderVersion")
-  
-  // 当然也有 -js 和 -native（但未经过测试）
 }
 ```
 #### 代码中
 ```kotlin
-// 使用 KtProviderManager 的获取服务
+// 使用 KtProviderManager 获取服务
 val service = KtProviderManager.getImplOrNull(ITestService::class, "test")
 println(service.get())
 ```
@@ -130,28 +159,34 @@ println(service.get())
 ### 自动生成 KtProviderInitializer 实现类
 KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
 然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
-（但只允许 implementation、api 依赖其他模块）  
+**（但只允许 implementation、api 依赖其他模块）**  
 所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由
 
 ### KSP 解析模块内注解
-基于 KSP，解析模块内注解，并生成
-然后添加到 `KtProviderInitializer` 实现类的 `initAddAllProvider` 方法下  
-类似于如下代码:
+基于 KSP，解析模块内注解，并生成 `KtProviderRouter` 的实现类，然后之前生成的 `KtProviderInitializer` 的实现类
+会自动调用 `KtProviderRouter` 实现类
+
+类似于以下代码:
 ```kotlin
-object KtProvider : KtProviderInitializer() {
-  // 如果没有重写 initAddAllProvider 方法，则会自动重写
-  // 如果已经重写，则在方法体的第一行插入 _initImpl()
-  override fun initAddAllProvider() {
-    _initImpl() // 先调用 _initImpl 方法进行初始化
-    // ... 后面是你重写的内容
-  }
+// KtProviderInitializer 实现类
+object MainKtProviderInitializer : KtProviderInitializer() {
   
-  // 该方法由 ir 添加，用于收集当前模块的所有路由
-  private fun _initImpl() {
-    addKClassProvider("key1") { TestClass1::class }
-    addNewImplProvider("key2") { TestClass2() }
-    addSingleImplProvider("key3") { TestClass3() }
-    // ...
+  override val router: KtProviderRouter = ModuleKtProviderRouter
+  
+  override val otherModuleKtProvider: List<KtProviderInitializer> = listOf(
+    // 这里根据 gradle 编译时的模块依赖关系生成所依赖模块的 KtProviderInitializer 实现类
+    Module1KtProviderInitializer,
+    Module2KtProviderInitializer
+  )
+}
+```
+```kotlin
+// KtProviderRouter 实现类
+internal object ModuleKtProviderRouter : KtProviderRouter() {
+  override fun initRouter(delegate: IKtProviderDelegate) {
+    // 通过 ksp 找到所有注解，然后添加实现类
+    delegate.addImplProvider(ITestService::class, "zzz") { Test1 }
+    delegate.addImplProvider(ITestService2::class, "zzz") { Test2 }
   }
 }
 ```
