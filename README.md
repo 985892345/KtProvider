@@ -104,13 +104,13 @@ iOS: Initialize in `App#init` (Swift) or `application:didFinishLaunchingWithOpti
 @main
 struct iOSApp: App {
     init() {
-        XXXKtProviderInitializer.tryInitKtProvider()
+        XXXKtProviderInitializer.shared.tryInitKtProvider()
     }
 }
 ```
 ```objective-c
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    XXXKtProviderInitializer.tryInitKtProvider();
+    [XXXKtProviderInitializer.shared tryInitKtProvider];
 }
 ```
 

@@ -96,13 +96,13 @@ iOS: 在 `App#init` (Swift) 或 `application:didFinishLaunchingWithOptions:` (Ob
 @main
 struct iOSApp: App {
     init() {
-        XXXKtProviderInitializer.tryInitKtProvider()
+        XXXKtProviderInitializer.shared.tryInitKtProvider()
     }
 }
 ```
 ```objective-c
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    XXXKtProviderInitializer.tryInitKtProvider()
+    [XXXKtProviderInitializer.shared tryInitKtProvider];
 }
 ```
 
