@@ -106,6 +106,9 @@ class KtProviderSymbolProcess(
           } catch (e: KSTypeNotPresentException) {
             logger.warn("declaration = ${declaration.toClassName()}, ksType = ${e.ksType}")
             e.ksType.toClassName()
+          } catch (e: NoSuchElementException) {
+            // Retrieving the default value of clazz in iOS will fail here.
+            null
           }
           logger.warn("declaration = ${declaration.toClassName()}, clazzClassName = $clazzClassName")
           if (clazzClassName != null) {
@@ -158,6 +161,9 @@ class KtProviderSymbolProcess(
             } else it.clazz.asClassName()
           } catch (e: KSTypeNotPresentException) {
             e.ksType.toClassName()
+          } catch (e: NoSuchElementException) {
+            // Retrieving the default value of clazz in iOS will fail here.
+            null
           }
           if (clazzClassName != null) {
             builder.addStatement(
