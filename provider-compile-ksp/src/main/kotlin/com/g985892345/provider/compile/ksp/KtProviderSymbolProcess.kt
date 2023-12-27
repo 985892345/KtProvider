@@ -96,8 +96,9 @@ class KtProviderSymbolProcess(
               if (it.name.isEmpty()) {
                 val superTypes = declaration.superTypes.toList()
                 if (superTypes.size != 1) {
-                  throw IllegalArgumentException("父类型只有一个接口或者只继承了类时才允许不设置 clazz 和 name   " +
-                      "位置：${declaration.location}")
+                  throw IllegalArgumentException("It is only allowed to omit clazz and name " +
+                      "when the parent type has only one interface or inherits only one class. " +
+                      "The position is as follows: ${declaration.location}")
                 }
                 superTypes[0].toTypeName()
               } else null
@@ -148,8 +149,9 @@ class KtProviderSymbolProcess(
               if (it.name.isEmpty()) {
                 val superTypes = declaration.superTypes.toList()
                 if (superTypes.size != 1) {
-                  throw IllegalArgumentException("父类型只有一个接口或者只继承了类时才允许不设置 clazz 和 name   " +
-                      "位置：${declaration.location}")
+                  throw IllegalArgumentException("It is only allowed to omit clazz and name " +
+                      "when the parent type has only one interface or inherits only one class. " +
+                      "The position is as follows: ${declaration.location}")
                 }
                 superTypes[0].toTypeName()
               } else null

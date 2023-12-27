@@ -1,7 +1,7 @@
 package com.g985892345.test
 
 import com.ITestService
-import com.g985892345.provider.annotation.ImplProvider
+import com.g985892345.provider.api.annotation.ImplProvider
 
 /**
  * .

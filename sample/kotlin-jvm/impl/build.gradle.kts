@@ -9,4 +9,5 @@ version = "unspecified"
 
 dependencies {
   implementation(rootProject.project("sample:kotlin-jvm:api"))
+  ksp(ktProvider.ksp)
 }

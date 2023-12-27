@@ -3,17 +3,18 @@ package com.g985892345.provider.api.annotation
 import kotlin.reflect.KClass
 
 /**
- * 所有注解
+ * Annotation
  *
  * @author 985892345
  * 2023/6/13 20:21
  */
 
 /**
- * 获取一个实例
- * - 实现方提供 class 则每次获取都是新的实例，提供 object 则每次获取都是单例
- * - [clazz] 和 [name] 最少设置一个
- * - 在不填写 [name] 时，如果直接父类型只有一个接口或者只继承了类时，则可以不填写 [clazz]，默认使用父类型
+ * Obtain an instance
+ * - For class implementation, a new instance is created each time it is retrieved.
+ * - For object implementation, a singleton instance is returned each time it is retrieved.
+ * - At least one of [clazz] and [name] should be set.
+ * - If the immediate parent type has only one interface or inherits only one class, [clazz] and [name] can be omitted, indicating the default implementation class for [clazz].
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)
@@ -21,10 +22,10 @@ import kotlin.reflect.KClass
 annotation class ImplProvider(val clazz: KClass<*> = Nothing::class, val name: String = "")
 
 /**
- * 获取实现类的 KClass
- * - 支持 Class、object、接口
- * - [clazz] 和 [name] 最少设置一个
- * - 在不填写 [name] 时，如果直接父类型只有一个接口或者只继承了类时，则可以不填写 [clazz]，默认使用父类型
+ * Retrieve the KClass of the implementation class
+ * - Supports Class, object, and interface.
+ * - At least one of [clazz] and [name] should be set.
+ * - If the immediate parent type has only one interface or inherits only one class, [clazz] and [name] can be omitted, indicating the default implementation class for [clazz].
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)

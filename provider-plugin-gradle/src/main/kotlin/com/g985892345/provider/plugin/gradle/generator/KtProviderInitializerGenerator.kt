@@ -22,7 +22,7 @@ class KtProviderInitializerGenerator(
   
   companion object {
     /**
-     * 用于生成 KtProviderInitializer 实现类的 task 任务
+     * Task used for generating the implementation class of KtProviderInitializer.
      */
     fun getTaskName(project: Project): String {
       val projectName = project.name.split(Regex("[^0-9a-zA-Z]"))
@@ -75,7 +75,7 @@ class KtProviderInitializerGenerator(
     }
   }
   
-  // 生成 KtProviderInitializer 的实现类并加入编译环境
+  // Generate the implementation class of KtProviderInitializer.
   private fun configCreateKtProviderTask(): TaskProvider<Task> {
     val ktProviderRouterPackageName = KtProviderExtensions.getPackageName(project)
     val ktProviderRouterClassName = "${KtProviderExtensions.getClassNameSuffix(project)}KtProviderRouter"
@@ -83,7 +83,6 @@ class KtProviderInitializerGenerator(
       it.arg("ktProviderRouterPackageName", ktProviderRouterPackageName)
       it.arg("ktProviderRouterClassName", ktProviderRouterClassName)
     }
-    // 生成 KtProviderInitializer 的实现类
     return project.tasks.register(taskName) { task ->
       task.group = "ktProvider"
       val dependModuleProjects = getDependModulePaths()
@@ -133,7 +132,7 @@ class KtProviderInitializerGenerator(
     ids.forEach { withId(it, action) }
   }
   
-  // 获取依赖的所有模块 path
+  // Retrieve the paths of all dependent modules.
   private fun getDependModulePaths(): List<Project> {
     val dependProjects = mutableListOf<Project>()
     listOf(
@@ -150,7 +149,6 @@ class KtProviderInitializerGenerator(
     return dependProjects
   }
   
-  // 输出文件
   private fun outputFile(
     selfInitializerClass: String,
     taskName: String,
@@ -165,7 +163,7 @@ class KtProviderInitializerGenerator(
     val ktProviderImplFile = dir.resolve("${selfInitializerClass.substringAfterLast(".")}.kt")
     ktProviderImplFile.createNewFile()
     ktProviderImplFile.writeText(
-      "// 自动生成，task 为 $taskName \n" +
+      "// Automatically generated for Gradle task: $taskName \n" +
           fileText
     )
   }

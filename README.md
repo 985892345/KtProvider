@@ -2,110 +2,65 @@
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.985892345/provider-api?server=https://s01.oss.sonatype.org&label=release)
 ![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.985892345/provider-api?server=https://s01.oss.sonatype.org&label=SNAPSHOT)
 
-支持 KMP 的跨模块服务提供轻量级框架  
-- 支持 KMP，可用于 Compose Multiplatform 中 (目前未测试，理论上支持)
-- 支持 KMP 的多模块工程 (jvm 和 Android 项目已通过测试)
-- 只提供底层支持，允许对服务管理者进一步封装
+[中文文档](README_CN.md)
 
-## 引入教程
-目前还处于测试阶段，未发布稳定包，请先设置 MavenCentral 快照仓库后进行依赖
+Cross-Module Service Provisioning Framework with KMP Support
+- Multi-module Project with KMP Support
+- Suitable for use in Compose Multiplatform environment.
+
+## Setup
+Currently, in the testing phase, the stable package has not been released yet. 
+Please configure the MavenCentral snapshot repository before adding the dependency.
 ```kotlin
 // setting.gradle.kts
-// gradle 插件仓库地址
+// Gradle plugin repository address
 pluginManagement {
   repositories {
     // ...
-    // mavenCentral 快照仓库
+    // MavenCentral Snapshot Repository
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }
 }
 
-// 依赖地址
-// 这个 dependencyResolutionManagement 为 Android 端的写法，该写法用于统一所有模块依赖
+// Dependency address
+// This dependencyResolutionManagement configuration is specific to the Android platform and is used to centralize and manage dependencies across all modules.
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
   repositories {
     // ...
-    // mavenCentral 快照仓库
+    // MavenCentral Snapshot Repository
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }
 }
 ```
-如果不使用 `dependencyResolutionManagement` 则采取以下写法
+If you don't use `dependencyResolutionManagement` take the following writing: 
 ```kotlin
 // build.gradle.kts
 repositories {
-  // mavenCentral 快照仓库
+  // MavenCentral Snapshot Repository
   maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
 }
 ```
 
-### 启动模块
-如果你是 Kotlin/Jvm 项目，启动模块一般是 `main` 函数所在模块，
-如果是 Android 项目，启动模式是引入了 `com.android.application` 插件的模块   
-可查看 [sample](sample) 使用示例
-#### build.gradle.kts
+Across all modules:
 ```kotlin
+// build.gradle.kts
 plugins {
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
-dependencies {
-  // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
-  val ktProviderKsp = "io.github.985892345:provider-compile-ksp:x.y.z"
-  add("kspCommonMainMetadata", ktProviderKsp)
-  add("kspAndroid", ktProviderKsp)
-  add("kspDesktop", ktProviderKsp)
-  add("kspIosX64", ktProviderKsp)
-  add("kspIosArm64", ktProviderKsp)
-  add("kspIosSimulatorArm64", ktProviderKsp)
-  // ...
-  
-  // provider-api 依赖已随 gradle 插件一起添加
-  // provider-manager 可选择性添加，详细请看后文
-}
-```
-使用 KtProvider 插件后会自动生成一个 `KtProviderInitializer` 的实现类，
-并且会根据该模块的依赖关系自动调用其他模块的 `tryInitKtProvider()` 方法
-
-#### 代码中
-```kotlin
-// 然后在启动函数中进行加载
-fun main() {
-  // 调用自动生成的 XXXKtProviderInitializer 
-  // 会在构建时自动生成，也可以直接调用 generateXXXKtProviderInitializerImpl gradle 任务直接生成
-  // 该类名默认为 模块名+KtProviderInitializer，可在 ktProvider 闭包中设置
-  XXXKtProviderInitializer.tryInitKtProvider()
-}
-
-// Android 在 Application 的 onCreate 中加载
-class App : Application() {
-  override fun onCreate() {
-    super.onCreate()
-    XXXKtProviderInitializer.tryInitKtProvider()
+kotlin {
+  sourceSets {
+    commonMain.dependencies {
+      // The provider-manager dependency can be optionally added. 
+      // Additionally, you have the option to implement your own provider-manager.
+      implementation(ktProvider.manager)
+    }
   }
 }
-```
-
-### api 模块
-api 模块即定义接口的模块，此模块只需要定义接口即可，不需要引入 KtProvider 插件
-```kotlin
-interface ITestService {
-  fun get(): String
-}
-```
-
-### 实现模块
-实现模块依赖 api 模块，启动模块需要间接或直接依赖实现模块（只支持 implementation 和 api）
-#### build.gradle.kts
-```kotlin
-plugins {
-  id("io.github.985892345.KtProvider") version "x.y.z"
-}
 
 dependencies {
-  // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
-  // ktProvider 的扩展中已经默认包含对应版本的 ksp 依赖，建议直接使用
+  // Please refer to the official documentation for KSP configurations: https://kotlinlang.org/docs/ksp-multiplatform.html
   add("kspCommonMainMetadata", ktProvider.ksp)
   add("kspAndroid", ktProvider.ksp)
   add("kspDesktop", ktProvider.ksp)
@@ -114,88 +69,117 @@ dependencies {
   add("kspIosSimulatorArm64", ktProvider.ksp)
   // ...
   
-  // provider-api 依赖已随 gradle 插件一起添加
-  // provider-manager 可选择性添加，详细请看后文
+  // The provider-api dependency is already included with the Gradle plugin.
 }
 ```
-#### 代码中
+
+## Initialization
+Kotlin/Jvm: It is recommended to perform initialization in the `main` function.
 ```kotlin
-// 打上注解
-@ImplProvider(clazz = ITestService::class, name = "test") // class 与 name 必须包含一个
+fun main() {
+  // Invoke the automatically generated XXXKtProviderInitializer class (module name + KtProviderInitializer)
+  // This class will be automatically generated during the build process. 
+  // Alternatively, you can directly invoke the generateXXXKtProviderInitializerImpl Gradle task to generate it.
+  XXXKtProviderInitializer.tryInitKtProvider()
+}
+```
+
+Android: It is recommended to perform initialization in the Application#onCreate method.
+```kotlin
+class App : Application() {
+  override fun onCreate() {
+    super.onCreate()
+    XXXKtProviderInitializer.tryInitKtProvider()
+  }
+}
+```
+
+iOS: Initialize in App#init (Swift) or application:didFinishLaunchingWithOptions: (Objective-C)
+(I'm not proficient in iOS, so this may not be the most optimal approach.).
+```swift
+@main
+struct iOSApp: App {
+    init() {
+        XXXKtProviderInitializer.tryInitKtProvider()
+    }
+}
+```
+```objective-c
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    XXXKtProviderInitializer.tryInitKtProvider()
+}
+```
+
+## Usage
+Add interface
+```kotlin
+interface ITestService {
+  fun get(): String
+}
+```
+
+Implement interface
+```kotlin
+@ImplProvider(clazz = ITestService::class, name = "test")
 class TestServiceImpl : ITestService {
   override fun get(): String {
     return "123"
   }
 }
 ```
-| 注解              | 作用            |                                            |
-|-----------------|---------------|--------------------------------------------|
-| ImplProvider    | 每次获取都是新的实例    |                                            |
-| KClassProvider  | 获取实现类的 KClass | 封装一下就可用于获取 Android 中的 Class\<out Activity> |
+| Annotation         |                                                                                                    |
+|--------------------|----------------------------------------------------------------------------------------------------|
+| **ImplProvider**   | Obtain an instance, which becomes a singleton when the implementation class is an object.          |
+| **KClassProvider** | Retrieve the KClass of the implementation class (can be used for Class\<out Activity> in Android). |
 
-
-
-### 服务消费模块
-#### build.gradle.kts
+Use interface
 ```kotlin
-// 引入 provider-manager 依赖
-// 该依赖并不是必选项，你可以实现自己的服务管理者
-kotlin {
-  sourceSets {
-    commonMain.dependencies {
-      // ktProvider 的扩展中已经默认包含对应版本的 provider-manager 依赖，建议直接使用
-      implementation(ktProvider.manager)
-    }
-  }
-}
-```
-#### 代码中
-```kotlin
-// 使用 KtProviderManager 获取服务
 val service = KtProviderManager.getImplOrNull(ITestService::class, "test")
 println(service.get())
 ```
 
-## 实现原理
-### 自动生成 KtProviderInitializer 实现类
-KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
-然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法
-**（但只允许 implementation、api 依赖其他模块）**  
-所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由
+## Implementation principle
+**Automatically generate the implementation class for `KtProviderInitializer`.**
 
-### KSP 解析模块内注解
-基于 KSP，解析模块内注解，并生成 `KtProviderRouter` 的实现类，然后之前生成的 `KtProviderInitializer` 的实现类
-会自动调用 `KtProviderRouter` 实现类
+The KtProvider Gradle plugin automatically generates the implementation class for `KtProviderInitializer`. 
+Then, based on the dependency relationships between modules, 
+it automatically invokes the `tryInitKtProvider` method of the implementation classes in other modules.
+Therefore, you just need to call the `tryInitKtProvider` method in the startup module to load all routes.
 
-类似于以下代码:
+**Please note that this mechanism only allows `implementation` and `api` dependencies on other modules.**
+
+
+**KSP parses annotations within the module.**
+
+Based on KSP, it parses annotations within the module and generates the implementation class for `KtProviderRouter`. 
+Then, the previously generated implementation class for `KtProviderInitializer` automatically 
+invokes the implementation class of `KtProviderRouter`.
+
+Similar to the following code:
 ```kotlin
-// KtProviderInitializer 实现类
+// Implementation class of KtProviderInitializer
 object ModuleKtProviderInitializer : KtProviderInitializer() {
   
   override val router: KtProviderRouter = ModuleKtProviderRouter
   
   override val otherModuleKtProvider: List<KtProviderInitializer> = listOf(
-    // 这里根据 gradle 编译时的模块依赖关系生成所依赖模块的 KtProviderInitializer 实现类
+    // Here, based on the module dependency relationship during Gradle compilation, 
+    // the implementation class of KtProviderInitializer for the dependent modules is generated.
     Module1KtProviderInitializer,
     Module2KtProviderInitializer
   )
 }
 ```
 ```kotlin
-// KtProviderRouter 实现类
+// Implementation class of KtProviderRouter
 internal object ModuleKtProviderRouter : KtProviderRouter() {
   override fun initRouter(delegate: IKtProviderDelegate) {
-    // 通过 ksp 找到所有注解，然后添加实现类
-    delegate.addImplProvider(ITestService::class, "zzz") { Test1 }
-    delegate.addImplProvider(ITestService2::class, "zzz") { Test2 }
+    // By using KSP, find all annotations and then add the implementation classes.
+    delegate.addImplProvider(ITestService::class, "abc") { TestServiceImpl }
+    delegate.addImplProvider(ITestService2::class, "123") { TestServiceImpl2 }
   }
 }
 ```
-
-
-## 自定义封装
-`provider-manager` 可选择性依赖，我只设计了服务提供框架的底层支持，可以实现自己的 `KtProviderManager` 来扩展其他功能，
-具体实现逻辑请看 `provider-manager` 源码
 
 
 ## License

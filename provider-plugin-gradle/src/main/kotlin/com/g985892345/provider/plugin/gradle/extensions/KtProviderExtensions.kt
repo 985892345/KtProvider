@@ -12,22 +12,23 @@ import org.gradle.api.Project
 abstract class KtProviderExtensions(private val project: Project) {
   
   /**
-   * 插件版本
+   * Plugin version.
    */
   val version = BuildConfig.VERSION
   
   /**
-   * 对应版本的 ksp 依赖
+   * KSP dependency for the corresponding version.
    */
   val ksp = "${BuildConfig.GROUP}:provider-compile-ksp:${version}"
   
   /**
-   * 对应版本的 provider-api 依赖，引入插件时已默认包含，无需再次依赖
+   * provider-api dependency for the corresponding version.
+   * It is already included by default when importing the plugin, so there is no need to add it again.
    */
   val api = "${BuildConfig.GROUP}:provider-api:${version}"
   
   /**
-   * 对应版本的 provider-manager 依赖
+   * provider-manager dependency for the corresponding version.
    */
   val manager = "${BuildConfig.GROUP}:provider-manager:${version}"
   
@@ -53,7 +54,7 @@ abstract class KtProviderExtensions(private val project: Project) {
     }
     
     /**
-     * 得到自动生成的 KtProviderInitializer 实现类全称
+     * Obtain the qualified name of the automatically generated KtProviderInitializer implementation class.
      */
     fun getInitializerClass(project: Project): String {
       return "${getPackageName(project)}." + getClassNameSuffix(project) + "KtProviderInitializer"

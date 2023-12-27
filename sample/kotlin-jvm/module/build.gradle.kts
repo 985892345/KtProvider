@@ -14,6 +14,6 @@ dependencies {
   implementation(rootProject.project("sample:kotlin-jvm:impl"))
   implementation(rootProject.project("sample:kotlin-jvm:impl2"))
   
-  val version = properties["VERSION"].toString()
-  implementation("io.github.985892345:provider-manager:$version")
+  implementation(ktProvider.manager)
+  ksp(ktProvider.ksp)
 }
