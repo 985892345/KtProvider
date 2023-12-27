@@ -11,6 +11,7 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
+import kotlin.reflect.KClass
 
 /**
  * .
@@ -23,7 +24,6 @@ class KtProviderSymbolProcess(
   private val codeGenerator: CodeGenerator,
   private val options: Options,
 ) : SymbolProcessor {
-  
   
   override fun process(resolver: Resolver): List<KSAnnotated> {
     val implProviderMap = findImplProvider(resolver)
@@ -75,6 +75,8 @@ class KtProviderSymbolProcess(
         try {
           writeTo(codeGenerator, true, data.keys)
         } catch (e: FileAlreadyExistsException) {
+          // An exception will be thrown when generating the KtProviderRouter implementation class repeatedly,
+          // but it cannot be determined by whether the "data" is empty because it could be the second generation.
         }
       }
   }
@@ -90,26 +92,7 @@ class KtProviderSymbolProcess(
     override fun addStatement(builder: FunSpec.Builder) {
       declaration.getAnnotationsByType(ImplProvider::class)
         .forEach {
-          val clazzClassName = try {
-            logger.warn("declaration = ${declaration.toClassName()}, clazz = ${it.clazz}")
-            if (it.clazz == Void::class || it.clazz == Nothing::class) {
-              if (it.name.isEmpty()) {
-                val superTypes = declaration.superTypes.toList()
-                if (superTypes.size != 1) {
-                  throw IllegalArgumentException("It is only allowed to omit clazz and name " +
-                      "when the parent type has only one interface or inherits only one class. " +
-                      "The position is as follows: ${declaration.location}")
-                }
-                superTypes[0].toTypeName()
-              } else null
-            } else it.clazz.asClassName()
-          } catch (e: KSTypeNotPresentException) {
-            logger.warn("declaration = ${declaration.toClassName()}, ksType = ${e.ksType}")
-            e.ksType.toClassName()
-          } catch (e: NoSuchElementException) {
-            // Retrieving the default value of clazz in iOS will fail here.
-            null
-          }
+          val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
           logger.warn("declaration = ${declaration.toClassName()}, clazzClassName = $clazzClassName")
           if (clazzClassName != null) {
             if (declaration.classKind == ClassKind.OBJECT) {
@@ -147,24 +130,7 @@ class KtProviderSymbolProcess(
     override fun addStatement(builder: FunSpec.Builder) {
       declaration.getAnnotationsByType(KClassProvider::class)
         .forEach {
-          val clazzClassName = try {
-            if (it.clazz == Void::class || it.clazz == Nothing::class) {
-              if (it.name.isEmpty()) {
-                val superTypes = declaration.superTypes.toList()
-                if (superTypes.size != 1) {
-                  throw IllegalArgumentException("It is only allowed to omit clazz and name " +
-                      "when the parent type has only one interface or inherits only one class. " +
-                      "The position is as follows: ${declaration.location}")
-                }
-                superTypes[0].toTypeName()
-              } else null
-            } else it.clazz.asClassName()
-          } catch (e: KSTypeNotPresentException) {
-            e.ksType.toClassName()
-          } catch (e: NoSuchElementException) {
-            // Retrieving the default value of clazz in iOS will fail here.
-            null
-          }
+          val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
           if (clazzClassName != null) {
             builder.addStatement(
               "delegate.addImplProvider(%T::class, %S) { %T::class }",
@@ -177,6 +143,29 @@ class KtProviderSymbolProcess(
             )
           }
         }
+    }
+  }
+  
+  @OptIn(KspExperimental::class)
+  private fun getClazzTypeName(declaration: KSClassDeclaration, name: String, getClazz: () -> KClass<*>): TypeName? {
+    return try {
+      val clazz = getClazz.invoke()
+      if (clazz == Void::class || clazz == Nothing::class) null else clazz.asClassName()
+    } catch (e: KSTypeNotPresentException) {
+      e.ksType.toClassName()
+    } catch (e: NoSuchElementException) {
+      // Retrieving the default value of clazz in Native will fail here.
+      null
+    }.let {
+      if (it == null && name.isEmpty()) {
+        val superTypes = declaration.superTypes.toList()
+        if (superTypes.size != 1) {
+          throw IllegalArgumentException("It is only allowed to omit clazz and name " +
+              "when the parent type has only one interface or inherits only one class. " +
+              "The position is as follows: ${declaration.location}")
+        }
+        superTypes[0].toTypeName()
+      } else it
     }
   }
 }
