@@ -10,6 +10,7 @@ Cross-Module Service Provisioning Framework with KMP Support
 
 ## Setup
 Currently, in the testing phase, the stable package has not been released yet. 
+
 Please configure the MavenCentral snapshot repository before adding the dependency.
 ```kotlin
 // setting.gradle.kts
@@ -23,7 +24,8 @@ pluginManagement {
 }
 
 // Dependency address
-// This dependencyResolutionManagement configuration is specific to the Android platform and is used to centralize and manage dependencies across all modules.
+// This dependencyResolutionManagement configuration is specific to the Android platform 
+// and is used to centralize and manage dependencies across all modules.
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
   repositories {
@@ -60,7 +62,8 @@ kotlin {
 }
 
 dependencies {
-  // Please refer to the official documentation for KSP configurations: https://kotlinlang.org/docs/ksp-multiplatform.html
+  // Please refer to the official documentation for KSP configurations: 
+  // https://kotlinlang.org/docs/ksp-multiplatform.html
   add("kspCommonMainMetadata", ktProvider.ksp)
   add("kspAndroid", ktProvider.ksp)
   add("kspDesktop", ktProvider.ksp)
@@ -84,7 +87,7 @@ fun main() {
 }
 ```
 
-Android: It is recommended to perform initialization in the Application#onCreate method.
+Android: It is recommended to perform initialization in the `Application#onCreate` method.
 ```kotlin
 class App : Application() {
   override fun onCreate() {
@@ -94,8 +97,9 @@ class App : Application() {
 }
 ```
 
-iOS: Initialize in App#init (Swift) or application:didFinishLaunchingWithOptions: (Objective-C)
-(I'm not proficient in iOS, so this may not be the most optimal approach.).
+iOS: Initialize in `App#init` (Swift) or `application:didFinishLaunchingWithOptions:` (Objective-C)
+
+(I'm not proficient in iOS, so this may not be the most optimal approach).
 ```swift
 @main
 struct iOSApp: App {
@@ -106,7 +110,7 @@ struct iOSApp: App {
 ```
 ```objective-c
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    XXXKtProviderInitializer.tryInitKtProvider()
+    XXXKtProviderInitializer.tryInitKtProvider();
 }
 ```
 
@@ -139,7 +143,7 @@ println(service.get())
 ```
 
 ## Implementation principle
-**Automatically generate the implementation class for `KtProviderInitializer`.**
+**Automatically generate the implementation class for `KtProviderInitializer`**
 
 The KtProvider Gradle plugin automatically generates the implementation class for `KtProviderInitializer`. 
 Then, based on the dependency relationships between modules, 
@@ -149,7 +153,7 @@ Therefore, you just need to call the `tryInitKtProvider` method in the startup m
 **Please note that this mechanism only allows `implementation` and `api` dependencies on other modules.**
 
 
-**KSP parses annotations within the module.**
+**KSP parses annotations within the module**
 
 Based on KSP, it parses annotations within the module and generates the implementation class for `KtProviderRouter`. 
 Then, the previously generated implementation class for `KtProviderInitializer` automatically 

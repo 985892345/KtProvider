@@ -70,7 +70,7 @@ dependencies {
 ```
 
 ### 初始化
-Kotlin/Jvm: 建议在 main 函数进行初始化
+Kotlin/Jvm: 建议在 `main` 函数进行初始化
 ```kotlin
 fun main() {
   // 调用自动生成的 XXXKtProviderInitializer (模块名+KtProviderInitializer)
@@ -79,7 +79,7 @@ fun main() {
 }
 ```
 
-Android: 建议在 Application#onCreate 中进行初始化
+Android: 建议在 `Application#onCreate` 中进行初始化
 ```kotlin
 class App : Application() {
   override fun onCreate() {
@@ -89,7 +89,9 @@ class App : Application() {
 }
 ```
 
-iOS: 在 App#init (Swift) 或 application:didFinishLaunchingWithOptions: (Objective-C) 中初始化 (我不擅长 iOS，该写法可能并不是最优的)
+iOS: 在 `App#init` (Swift) 或 `application:didFinishLaunchingWithOptions:` (Objective-C) 中初始化 
+
+(我不擅长 iOS，该写法可能并不是最优的)
 ```swift
 @main
 struct iOSApp: App {
