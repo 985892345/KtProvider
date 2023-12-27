@@ -2,11 +2,8 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 plugins {
   kotlin("multiplatform")
-  id("publish-maven-central")
+  id("io.github.985892345.MavenPublisher")
 }
-
-group = properties["GROUP"].toString()
-version = properties["VERSION"].toString()
 
 kotlin {
   jvm()
@@ -34,6 +31,6 @@ kotlin {
   }
 }
 
-publish {
-  artifactId = "provider-manager"
+publisher {
+  description = "the service provider manager of KtProvider"
 }

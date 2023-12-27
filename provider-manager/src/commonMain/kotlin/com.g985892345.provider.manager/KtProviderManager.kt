@@ -6,7 +6,7 @@ import com.g985892345.provider.api.init.wrapper.KClassProviderWrapper
 import kotlin.reflect.KClass
 
 /**
- * Service provider
+ * Service provider manager
  *
  * @author 985892345
  * 2023/6/13 22:05
