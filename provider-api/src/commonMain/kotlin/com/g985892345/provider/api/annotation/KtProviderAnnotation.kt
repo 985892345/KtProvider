@@ -14,7 +14,8 @@ import kotlin.reflect.KClass
  * - For class implementation, a new instance is created each time it is retrieved.
  * - For object implementation, a singleton instance is returned each time it is retrieved.
  * - At least one of [clazz] and [name] should be set.
- * - If the immediate parent type has only one interface or inherits only one class, [clazz] and [name] can be omitted, indicating the default implementation class for [clazz].
+ * - If the immediate parent type has only one interface or class, [clazz] and [name] can be omitted,
+ *   indicating the default implementation class for [clazz].
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)
@@ -25,7 +26,8 @@ annotation class ImplProvider(val clazz: KClass<*> = Nothing::class, val name: S
  * Retrieve the KClass of the implementation class
  * - Supports Class, object, and interface.
  * - At least one of [clazz] and [name] should be set.
- * - If the immediate parent type has only one interface or inherits only one class, [clazz] and [name] can be omitted, indicating the default implementation class for [clazz].
+ * - If the immediate parent type has only one interface or class, [clazz] and [name] can be omitted,
+ *   indicating the default implementation class for [clazz].
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)

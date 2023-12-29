@@ -11,7 +11,7 @@ class Options(
   val className: String,
 ) {
   constructor(options: Map<String, String>) : this(
-    options["ktProviderRouterPackageName"]!!,
-    options["ktProviderRouterClassName"]!!,
+    options["ktProviderRouterPackageName"]!!, // It assigned by the Gradle plugin
+    options["ktProviderRouterClassName"]!!, // It assigned by the Gradle plugin
   )
 }

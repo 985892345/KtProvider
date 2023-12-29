@@ -158,13 +158,16 @@ class KtProviderSymbolProcess(
       null
     }.let {
       if (it == null && name.isEmpty()) {
-        val superTypes = declaration.superTypes.toList()
-        if (superTypes.size != 1) {
+        val superTypesSize = declaration.superTypes.count()
+        if (superTypesSize == 0) {
+          throw IllegalArgumentException("${declaration.simpleName} unimplemented clazz. " +
+              "The position is as follows: ${declaration.location}")
+        } else if (superTypesSize != 1) {
           throw IllegalArgumentException("It is only allowed to omit clazz and name " +
-              "when the parent type has only one interface or inherits only one class. " +
+              "when the parent type has only one interface or class. " +
               "The position is as follows: ${declaration.location}")
         }
-        superTypes[0].toTypeName()
+        declaration.superTypes.first().toTypeName()
       } else it
     }
   }
