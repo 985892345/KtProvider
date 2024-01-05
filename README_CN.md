@@ -7,38 +7,6 @@
 - 可用于 Compose Multiplatform 中
 
 ## 配置
-目前还处于测试阶段，未发布稳定包，请先设置 MavenCentral 快照仓库后进行依赖
-```kotlin
-// setting.gradle.kts
-// gradle 插件仓库地址
-pluginManagement {
-  repositories {
-    // ...
-    // mavenCentral 快照仓库
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-  }
-}
-
-// 依赖地址
-// 这个 dependencyResolutionManagement 为 Android 端的写法，该写法用于统一所有模块依赖
-dependencyResolutionManagement {
-  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-  repositories {
-    // ...
-    // mavenCentral 快照仓库
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-  }
-}
-```
-如果不使用 `dependencyResolutionManagement` 则采取以下写法
-```kotlin
-// build.gradle.kts
-repositories {
-  // mavenCentral 快照仓库
-  maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-}
-```
-
 在所有模块中引入:
 ```kotlin
 // build.gradle.kts

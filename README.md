@@ -9,41 +9,6 @@ Cross-Module Service Provisioning Framework with KMP Support
 - Suitable for use in Compose Multiplatform environment.
 
 ## Setup
-Currently, in the testing phase, the stable package has not been released yet. 
-
-Please configure the MavenCentral snapshot repository before adding the dependency.
-```kotlin
-// setting.gradle.kts
-// Gradle plugin repository address
-pluginManagement {
-  repositories {
-    // ...
-    // MavenCentral Snapshot Repository
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-  }
-}
-
-// Dependency address
-// This dependencyResolutionManagement configuration is specific to the Android platform 
-// and is used to centralize and manage dependencies across all modules.
-dependencyResolutionManagement {
-  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-  repositories {
-    // ...
-    // MavenCentral Snapshot Repository
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-  }
-}
-```
-If you don't use `dependencyResolutionManagement` take the following writing: 
-```kotlin
-// build.gradle.kts
-repositories {
-  // MavenCentral Snapshot Repository
-  maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-}
-```
-
 Across all modules:
 ```kotlin
 // build.gradle.kts
