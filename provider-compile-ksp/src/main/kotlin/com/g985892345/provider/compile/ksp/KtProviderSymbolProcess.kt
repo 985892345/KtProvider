@@ -77,6 +77,7 @@ class KtProviderSymbolProcess(
         } catch (e: FileAlreadyExistsException) {
           // An exception will be thrown when generating the KtProviderRouter implementation class repeatedly,
           // but it cannot be determined by whether the "data" is empty because it could be the second generation.
+          // When data is empty, it is also necessary to generate the KtProviderRouter implementation class.
         }
       }
   }
