@@ -13,6 +13,7 @@ Across all modules:
 ```kotlin
 // build.gradle.kts
 plugins {
+  id("com.google.devtools.ksp")
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
@@ -40,6 +41,25 @@ dependencies {
   // The provider-api dependency is already included with the Gradle plugin.
 }
 ```
+<details>
+<summary>Only Jvm or Android projects</summary>
+
+```kotlin
+// build.gradle.kts
+plugins {
+  id("com.google.devtools.ksp")
+  id("io.github.985892345.KtProvider") version "x.y.z"
+}
+
+dependencies {
+  // The provider-manager dependency can be optionally added. 
+  // Additionally, you have the option to implement your own provider-manager.
+  implementation(ktProvider.manager)
+  // ksp
+  ksp(ktProvider.ksp)
+}
+```
+</details>
 
 ## Initialization
 Kotlin/Jvm: It is recommended to perform initialization in the `main` function.

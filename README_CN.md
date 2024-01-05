@@ -11,6 +11,7 @@
 ```kotlin
 // build.gradle.kts
 plugins {
+  id("com.google.devtools.ksp")
   id("io.github.985892345.KtProvider") version "x.y.z"
 }
 
@@ -36,6 +37,24 @@ dependencies {
   // provider-api 依赖已随 gradle 插件一起添加
 }
 ```
+<details>
+<summary>只是 Jvm 或 Android 项目</summary>
+
+```kotlin
+// build.gradle.kts
+plugins {
+  id("com.google.devtools.ksp")
+  id("io.github.985892345.KtProvider") version "x.y.z"
+}
+
+dependencies {
+  // provider-manager 可选择性添加，你可以实现自己的 provider-manager
+  implementation(ktProvider.manager)
+  // ksp
+  ksp(ktProvider.ksp)
+}
+```
+</details>
 
 ### 初始化
 Kotlin/Jvm: 建议在 `main` 函数进行初始化
