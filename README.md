@@ -10,6 +10,9 @@ Cross-Module Service Provisioning Framework with KMP Support
 
 ## Setup
 Across all modules:
+<details open>
+<summary>Kotlin Multiplatform projects</summary>
+
 ```kotlin
 // build.gradle.kts
 plugins {
@@ -41,6 +44,8 @@ dependencies {
   // The provider-api dependency is already included with the Gradle plugin.
 }
 ```
+</details>
+
 <details>
 <summary>Only Jvm or Android projects</summary>
 

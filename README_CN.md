@@ -8,6 +8,9 @@
 
 ## 配置
 在所有模块中引入:
+<details open>
+<summary>Kotlin Multiplatform 项目</summary>
+
 ```kotlin
 // build.gradle.kts
 plugins {
@@ -37,6 +40,8 @@ dependencies {
   // provider-api 依赖已随 gradle 插件一起添加
 }
 ```
+</details>
+
 <details>
 <summary>只是 Jvm 或 Android 项目</summary>
 
