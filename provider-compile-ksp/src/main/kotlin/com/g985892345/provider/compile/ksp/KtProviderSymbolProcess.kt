@@ -134,12 +134,12 @@ class KtProviderSymbolProcess(
           val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
           if (clazzClassName != null) {
             builder.addStatement(
-              "delegate.addImplProvider(%T::class, %S) { %T::class }",
+              "delegate.addKClassProvider(%T::class, %S) { %T::class }",
               clazzClassName, it.name, declaration.toClassName()
             )
           } else {
             builder.addStatement(
-              "delegate.addImplProvider(null, %S) { %T::class }",
+              "delegate.addKClassProvider(null, %S) { %T::class }",
               it.name, declaration.toClassName()
             )
           }
