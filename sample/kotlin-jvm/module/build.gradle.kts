@@ -1,6 +1,6 @@
 plugins {
-  kotlin("jvm")
-  id("com.google.devtools.ksp")
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.ksp)
   id("io.github.985892345.KtProvider")
 }
 
@@ -10,9 +10,9 @@ version = "unspecified"
 dependencies {
   implementation(kotlin("reflect"))
   
-  implementation(rootProject.project("sample:kotlin-jvm:api"))
-  implementation(rootProject.project("sample:kotlin-jvm:impl"))
-  implementation(rootProject.project("sample:kotlin-jvm:impl2"))
+  implementation(projects.sample.kotlinJvm.api)
+  implementation(projects.sample.kotlinJvm.impl)
+  implementation(projects.sample.kotlinJvm.impl2)
   
   implementation(ktProvider.manager)
   ksp(ktProvider.ksp)

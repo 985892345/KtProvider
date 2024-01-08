@@ -1,12 +1,13 @@
 plugins {
-  kotlin("jvm")
-  id("com.github.gmazzo.buildconfig")
-  id("com.gradle.plugin-publish") version "1.2.1" // https://plugins.gradle.org/docs/publish-plugin
-  id("io.github.985892345.MavenPublisher")
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.buildconfig)
+  alias(libs.plugins.publisher)
+  `java-gradle-plugin`
 }
 
 dependencies {
   compileOnly(kotlin("gradle-plugin-api"))
+  compileOnly(libs.ksp.gradlePlugin)
 }
 
 publisher {

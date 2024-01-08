@@ -7,6 +7,7 @@ pluginManagement {
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
   }
 }
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "KtProvider"
 include("provider-plugin-gradle")
 include("provider-compile-ksp")

@@ -1,6 +1,6 @@
 plugins {
-  kotlin("multiplatform")
-  id("io.github.985892345.MavenPublisher")
+  alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.publisher)
 }
 
 kotlin {

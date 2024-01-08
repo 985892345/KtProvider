@@ -1,6 +1,6 @@
 plugins {
-  kotlin("multiplatform")
-  id("io.github.985892345.MavenPublisher")
+  alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.publisher)
 }
 
 kotlin {
@@ -25,7 +25,7 @@ kotlin {
   sourceSets {
     val commonMain by getting {
       dependencies {
-        implementation(project(":provider-api"))
+        implementation(projects.providerApi)
       }
     }
   }
