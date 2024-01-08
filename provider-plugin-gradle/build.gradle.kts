@@ -6,8 +6,7 @@ plugins {
 }
 
 dependencies {
-  implementation(kotlin("gradle-plugin-api"))
-  compileOnly("com.google.devtools.ksp:symbol-processing-gradle-plugin:1.9.20-1.0.14")
+  compileOnly(kotlin("gradle-plugin-api"))
 }
 
 publisher {

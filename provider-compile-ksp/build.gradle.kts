@@ -11,7 +11,7 @@ dependencies {
   compileOnly("com.google.auto.service:auto-service:1.1.1")
   kapt("com.google.auto.service:auto-service:1.1.1")
   
-  implementation("com.google.devtools.ksp:symbol-processing-api:1.9.20-1.0.14")
+  compileOnly("com.google.devtools.ksp:symbol-processing-api:1.9.21-1.0.16")
   
   // https://square.github.io/kotlinpoet/
   implementation("com.squareup:kotlinpoet:1.15.1")
