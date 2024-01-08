@@ -19,7 +19,7 @@ import kotlin.reflect.KClass
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.SOURCE)
 annotation class ImplProvider(val clazz: KClass<*> = Nothing::class, val name: String = "")
 
 /**
@@ -31,5 +31,5 @@ annotation class ImplProvider(val clazz: KClass<*> = Nothing::class, val name: S
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.SOURCE)
 annotation class KClassProvider(val clazz: KClass<*> = Nothing::class, val name: String = "")
