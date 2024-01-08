@@ -81,9 +81,9 @@ class App : Application() {
 }
 ```
 
-iOS: 在 `App#init` (Swift) 或 `application:didFinishLaunchingWithOptions:` (Objective-C) 中初始化 
+iOS: 由于我不擅长 iOS，所以该写法可能并不是最优的
 
-(我不擅长 iOS，该写法可能并不是最优的)
+Swift: `App#init`
 ```swift
 @main
 struct iOSApp: App {
@@ -92,6 +92,8 @@ struct iOSApp: App {
     }
 }
 ```
+
+Objective-C: `application:didFinishLaunchingWithOptions:`
 ```objective-c
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     [XXXKtProviderInitializer.shared tryInitKtProvider];

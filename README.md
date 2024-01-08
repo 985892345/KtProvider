@@ -87,9 +87,9 @@ class App : Application() {
 }
 ```
 
-iOS: Initialize in `App#init` (Swift) or `application:didFinishLaunchingWithOptions:` (Objective-C)
+iOS: I'm not proficient in iOS, so this may not be the most optimal approach.
 
-(I'm not proficient in iOS, so this may not be the most optimal approach).
+Swift: `App#init`
 ```swift
 @main
 struct iOSApp: App {
@@ -98,6 +98,8 @@ struct iOSApp: App {
     }
 }
 ```
+
+Objective-C: `application:didFinishLaunchingWithOptions:`
 ```objective-c
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     [XXXKtProviderInitializer.shared tryInitKtProvider];

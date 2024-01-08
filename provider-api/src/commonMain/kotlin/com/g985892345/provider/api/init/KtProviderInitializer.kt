@@ -23,16 +23,21 @@ package com.g985892345.provider.api.init
  * }
  * ```
  *
- * iOS: Initialize in App#init (Swift) or application:didFinishLaunchingWithOptions: (Objective-C) (I'm not proficient in iOS, so this may not be the most optimal approach).
+ * iOS: I'm not proficient in iOS, so this may not be the most optimal approach.
+ *
+ * Swift: App#init
  * ```
  * @main
  * struct iOSApp: App {
  *     init() {
- *         XXXKtProviderInitializer.tryInitKtProvider()
+ *         XXXKtProviderInitializer.shared.tryInitKtProvider()
  *     }
  * }
+ * ```
+ * Objective-C: application:didFinishLaunchingWithOptions
+ * ```
  * - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
- *     XXXKtProviderInitializer.tryInitKtProvider()
+ *     [XXXKtProviderInitializer.shared tryInitKtProvider];
  * }
  * ```
  *
