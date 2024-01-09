@@ -12,7 +12,6 @@ dependencies {
   
   implementation(projects.sample.kotlinJvm.api)
   implementation(projects.sample.kotlinJvm.impl)
-  implementation(projects.sample.kotlinJvm.impl2)
   
   implementation(ktProvider.manager)
   ksp(ktProvider.ksp)

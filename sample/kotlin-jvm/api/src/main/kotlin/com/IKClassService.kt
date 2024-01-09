@@ -4,7 +4,7 @@ package com
  * .
  *
  * @author 985892345
- * 2023/7/22 13:41
+ * 2024/1/9 13:43
  */
-interface ITestService2 {
+interface IKClassService {
 }

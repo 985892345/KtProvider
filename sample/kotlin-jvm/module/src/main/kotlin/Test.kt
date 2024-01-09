@@ -1,4 +1,5 @@
-import com.ITestService
+import com.IImplService
+import com.IKClassService
 import com.g985892345.provider.ktprovider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
 
@@ -10,12 +11,35 @@ import com.g985892345.provider.manager.KtProviderManager
  */
 fun main() {
   ModuleKtProviderInitializer.tryInitKtProvider() // init service
-  val service1 = KtProviderManager.getImplOrThrow(ITestService::class)
-  println(service1.get())
-  val allImplList = KtProviderManager.getAllImpl(ITestService::class)
-  println("ImplList: $allImplList -> ${allImplList.map { it.value.get() }}")
-  val kClassList = KtProviderManager.getAllKClass(ITestService::class)
-  println("KClassList: $kClassList -> ${kClassList.map { it.value.get() }}")
+  
+  judge {
+    KtProviderManager.getImplOrThrow(IImplService::class, "class1").get() ===
+        KtProviderManager.getImplOrThrow(IImplService::class, "class2").get()
+  }
+  
+  judge {
+    val defaultObjectImplServiceImpl = KtProviderManager.getImplOrThrow(IImplService::class)
+    arrayOf(
+      KtProviderManager.getImplOrThrow(IImplService::class, "object1"),
+      KtProviderManager.getImplOrThrow(IImplService::class, "object2"),
+    ).all {
+      it.get() === defaultObjectImplServiceImpl.get()
+    }
+  }
+  
+  judge {
+    val defaultKClassImplServiceImpl = KtProviderManager.getKClassOrThrow(IKClassService::class)
+    arrayOf(
+      KtProviderManager.getKClassOrThrow(IKClassService::class, "KClass1"),
+      KtProviderManager.getKClassOrThrow(IKClassService::class, "KClass2"),
+    ).all {
+      it === defaultKClassImplServiceImpl
+    }
+  }
+}
 
-  println()
+private fun judge(action: () -> Boolean) {
+  if (!action.invoke()) {
+    error("???")
+  }
 }
