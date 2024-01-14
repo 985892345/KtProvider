@@ -40,7 +40,7 @@ class KtProviderInitializerGenerator(
   fun config() {
     val ktProvider = project.extensions.getByType(KtProviderExtensions::class.java)
     configDependencies(ktProvider)
-    val taskProvider = configCreateKtProviderTask()
+    val taskProvider = configCreateKtProviderTask(ktProvider)
     configSourceSetSrcDir(taskProvider)
   }
   
@@ -76,7 +76,7 @@ class KtProviderInitializerGenerator(
   }
   
   // Generate the implementation class of KtProviderInitializer.
-  private fun configCreateKtProviderTask(): TaskProvider<Task> {
+  private fun configCreateKtProviderTask(ktProvider: KtProviderExtensions): TaskProvider<Task> {
     val ktProviderRouterPackageName = KtProviderExtensions.getPackageName(project)
     val ktProviderRouterClassName = "${KtProviderExtensions.getClassNameSuffix(project)}KtProviderRouter"
     project.extensions.configure(KspExtension::class.java) {
@@ -85,7 +85,7 @@ class KtProviderInitializerGenerator(
     }
     return project.tasks.register(taskName) { task ->
       task.group = "ktProvider"
-      val dependModuleProjects = getDependModulePaths()
+      val dependModuleProjects = getDependModulePaths(ktProvider)
       task.inputs.property("dependModulePaths", dependModuleProjects.map { it.path })
       task.outputs.dir(ktProviderSource)
       task.doLast {
@@ -133,12 +133,11 @@ class KtProviderInitializerGenerator(
   }
   
   // Retrieve the paths of all dependent modules.
-  private fun getDependModulePaths(): List<Project> {
+  private fun getDependModulePaths(ktProvider: KtProviderExtensions): List<Project> {
     val dependProjects = mutableListOf<Project>()
-    listOf(
-      "api",
-      "implementation",
-    ).map { project.configurations.getByName(it) }.forEach { config ->
+    ktProvider.configurations.mapNotNull {
+      project.configurations.findByName(it)
+    }.forEach { config ->
       config.dependencies.forEach { dependency ->
         if (dependency is ProjectDependency) {
           val dependProject = dependency.dependencyProject

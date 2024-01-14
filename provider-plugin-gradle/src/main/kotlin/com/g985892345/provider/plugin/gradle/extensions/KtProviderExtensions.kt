@@ -32,6 +32,16 @@ abstract class KtProviderExtensions(private val project: Project) {
    */
   val manager = "${BuildConfig.GROUP}:provider-manager:${version}"
   
+  /**
+   * dependent configuration
+   */
+  val configurations = mutableListOf(
+    "api",
+    "implementation",
+    "commonMainApi",
+    "commonMainImplementation",
+  )
+  
   companion object {
     
     fun getPackageName(project: Project): String {
