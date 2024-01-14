@@ -31,7 +31,7 @@ dependencies {
   // ksp 相关配置请参考官方文档: https://kotlinlang.org/docs/ksp-multiplatform.html
   add("kspCommonMainMetadata", ktProvider.ksp)
   add("kspAndroid", ktProvider.ksp)
-  add("kspDesktop", ktProvider.ksp)
+  add("kspDesktop", ktProvider.ksp) // 取决于对 jvm 源集的配置
   add("kspIosX64", ktProvider.ksp)
   add("kspIosArm64", ktProvider.ksp)
   add("kspIosSimulatorArm64", ktProvider.ksp)

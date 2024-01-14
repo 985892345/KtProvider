@@ -35,7 +35,7 @@ dependencies {
   // https://kotlinlang.org/docs/ksp-multiplatform.html
   add("kspCommonMainMetadata", ktProvider.ksp)
   add("kspAndroid", ktProvider.ksp)
-  add("kspDesktop", ktProvider.ksp)
+  add("kspDesktop", ktProvider.ksp) // dependent on JVM source set configuration
   add("kspIosX64", ktProvider.ksp)
   add("kspIosArm64", ktProvider.ksp)
   add("kspIosSimulatorArm64", ktProvider.ksp)
