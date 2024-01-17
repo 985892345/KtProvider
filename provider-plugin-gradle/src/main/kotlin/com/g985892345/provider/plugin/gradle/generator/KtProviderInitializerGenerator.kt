@@ -87,6 +87,7 @@ class KtProviderInitializerGenerator(
       task.group = "ktProvider"
       val dependModuleProjects = getDependModulePaths(ktProvider)
       task.inputs.property("dependModulePaths", dependModuleProjects.map { it.path })
+      task.inputs.property("configurations", ktProvider.configurations)
       task.outputs.dir(ktProviderSource)
       task.doLast {
         val selfInitializerClass = KtProviderExtensions.getInitializerClass(project)
