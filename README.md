@@ -135,7 +135,7 @@ println(service.get())
 ```
 
 ## Implementation principle
-**Automatically generate the implementation class for `KtProviderInitializer`**
+**1. Automatically generate the implementation class for `KtProviderInitializer`**
 
 The KtProvider Gradle plugin automatically generates the implementation class for `KtProviderInitializer`. 
 Then, based on the dependency relationships between modules, 
@@ -145,7 +145,7 @@ Therefore, you just need to call the `tryInitKtProvider` method in the startup m
 **Please note that this mechanism only allows `implementation` and `api` dependencies on other modules.**
 
 
-**KSP parses annotations within the module**
+**2. KSP parses annotations within the module**
 
 Based on KSP, it parses annotations within the module and generates the implementation class for `KtProviderRouter`. 
 Then, the previously generated implementation class for `KtProviderInitializer` automatically 

@@ -129,7 +129,7 @@ println(service.get())
 ```
 
 ## 实现原理
-**自动生成 KtProviderInitializer 实现类**
+**1. 自动生成 KtProviderInitializer 实现类**
 
 KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
 然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法，
@@ -137,7 +137,7 @@ KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类
 
 **（注意：只允许 implementation、api 依赖其他模块）**
 
-**KSP 解析模块内注解**
+**2. KSP 解析模块内注解**
 
 基于 KSP，解析模块内注解，并生成 `KtProviderRouter` 的实现类，然后之前生成的 `KtProviderInitializer` 的实现类
 会自动调用 `KtProviderRouter` 实现类
