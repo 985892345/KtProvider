@@ -85,8 +85,8 @@ object KtProviderManager {
   fun <T : Any> getKClassOrThrow(clazz: KClass<out T>): KClass<out T>? = getKClassOrNull(clazz)!!
   
   /**
-   * 返回 [clazz] 和 [name] 对应的 KClass
-   * @throws IllegalArgumentException class 为 null 并且 name 为空串时抛出非法参数错误
+   * Return the KClass of the implementation class that is set with the corresponding [clazz] and [name].
+   * @throws IllegalArgumentException when [clazz] is null and [name] is an empty string.
    */
   fun <T : Any> getKClassOrNull(clazz: KClass<out T>?, name: String): KClass<out T>? = getKClassOrNullInternal(clazz, name)
   
