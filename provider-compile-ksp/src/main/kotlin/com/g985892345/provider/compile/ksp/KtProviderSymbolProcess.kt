@@ -28,34 +28,27 @@ class KtProviderSymbolProcess(
   override fun process(resolver: Resolver): List<KSAnnotated> {
     val implProviderMap = findImplProvider(resolver)
     val kClassProviderMap = findKClassProvider(resolver)
-    generateKtProvider(
-      buildMap<KSFile, MutableList<AddFunStatement>> {
-        implProviderMap.forEach { getOrPut(it.key) { mutableListOf() }.add(it.value) }
-        kClassProviderMap.forEach { getOrPut(it.key) { mutableListOf() }.add(it.value) }
-      }
-    )
+    generateKtProvider((implProviderMap + kClassProviderMap).toList())
     return emptyList()
   }
   
-  private fun findImplProvider(resolver: Resolver): Map<KSFile, AddFunStatement> {
+  private fun findImplProvider(resolver: Resolver): Sequence<AddFunStatement> {
     return resolver.getSymbolsWithAnnotation(ImplProvider::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
       .filter {
         it.classKind == ClassKind.CLASS || it.classKind == ClassKind.OBJECT
       }.map { ImplProviderStatement(it) }
-      .associateBy { it.declaration.containingFile!! }
   }
   
-  private fun findKClassProvider(resolver: Resolver): Map<KSFile, AddFunStatement> {
+  private fun findKClassProvider(resolver: Resolver): Sequence<AddFunStatement> {
     return resolver.getSymbolsWithAnnotation(KClassProvider::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
       .filter {
         it.classKind == ClassKind.CLASS || it.classKind == ClassKind.OBJECT || it.classKind == ClassKind.INTERFACE
       }.map { KClassProviderStatement(it) }
-      .associateBy { it.declaration.containingFile!! }
   }
   
-  private fun generateKtProvider(data: Map<KSFile, List<AddFunStatement>>) {
+  private fun generateKtProvider(data: List<AddFunStatement>) {
     FileSpec.builder(options.packageName, options.className)
       .addType(
         TypeSpec.objectBuilder(options.className)
@@ -66,14 +59,14 @@ class KtProviderSymbolProcess(
               .addModifiers(KModifier.OVERRIDE)
               .addParameter("delegate", IKtProviderDelegate::class)
               .apply {
-                data.values.flatten().forEach {
+                data.forEach {
                   it.addStatement(this)
                 }
               }.build()
           ).build()
       ).build().apply {
         try {
-          writeTo(codeGenerator, true, data.keys)
+          writeTo(codeGenerator, true, data.mapNotNullTo(hashSetOf()) { it.file })
         } catch (e: FileAlreadyExistsException) {
           // An exception will be thrown when generating the KtProviderRouter implementation class repeatedly,
           // but it cannot be determined by whether the "data" is empty because it could be the second generation.
@@ -83,12 +76,16 @@ class KtProviderSymbolProcess(
   }
   
   private interface AddFunStatement {
+    val file: KSFile?
     fun addStatement(builder: FunSpec.Builder)
   }
   
   private inner class ImplProviderStatement(
     val declaration: KSClassDeclaration
   ) : AddFunStatement {
+    override val file: KSFile?
+      get() = declaration.containingFile
+    
     @OptIn(KspExperimental::class)
     override fun addStatement(builder: FunSpec.Builder) {
       declaration.getAnnotationsByType(ImplProvider::class)
@@ -127,6 +124,9 @@ class KtProviderSymbolProcess(
   private inner class KClassProviderStatement(
     val declaration: KSClassDeclaration
   ) : AddFunStatement {
+    override val file: KSFile?
+      get() = declaration.containingFile
+    
     @OptIn(KspExperimental::class)
     override fun addStatement(builder: FunSpec.Builder) {
       declaration.getAnnotationsByType(KClassProvider::class)
