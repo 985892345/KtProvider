@@ -7,6 +7,10 @@ plugins {
   id("io.github.985892345.KtProvider")
 }
 
+ktProvider {
+  setLogEnable(true)
+}
+
 kotlin {
   jvm()
   listOf(

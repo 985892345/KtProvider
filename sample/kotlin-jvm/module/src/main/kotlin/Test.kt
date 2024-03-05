@@ -36,6 +36,7 @@ fun main() {
       it === defaultKClassImplServiceImpl
     }
   }
+  println(KtProviderManager.getImplOrThrow(IImplService::class, name = "test").get())
 }
 
 private fun judge(action: () -> Boolean) {

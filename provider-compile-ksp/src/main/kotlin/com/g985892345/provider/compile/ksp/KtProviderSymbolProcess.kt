@@ -4,9 +4,18 @@ import com.g985892345.provider.api.annotation.ImplProvider
 import com.g985892345.provider.api.annotation.KClassProvider
 import com.g985892345.provider.api.init.IKtProviderDelegate
 import com.g985892345.provider.api.init.KtProviderRouter
-import com.google.devtools.ksp.*
-import com.google.devtools.ksp.processing.*
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.KSTypeNotPresentException
+import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getAnnotationsByType
+import com.google.devtools.ksp.getClassDeclarationByName
+import com.google.devtools.ksp.processing.CodeGenerator
+import com.google.devtools.ksp.processing.KSPLogger
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessor
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFile
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
@@ -25,10 +34,26 @@ class KtProviderSymbolProcess(
   private val options: Options,
 ) : SymbolProcessor {
   
+  private var processNowTimes = 0
+  
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    val implProviderMap = findImplProvider(resolver)
-    val kClassProviderMap = findKClassProvider(resolver)
-    generateKtProvider((implProviderMap + kClassProviderMap).toList())
+    if (processNowTimes < options.processTimes - 1) {
+      val implProviderMap = findImplProvider(resolver)
+      val kClassProviderMap = findKClassProvider(resolver)
+      generateKtProviderRouter(
+        getKtProviderRouterName(processNowTimes),
+        (implProviderMap + kClassProviderMap).toList()
+      )
+    } else if (processNowTimes == options.processTimes - 1) {
+      val allKtProviderRouter = findKtProviderRouter(resolver)
+      val implProviderMap = findImplProvider(resolver)
+      val kClassProviderMap = findKClassProvider(resolver)
+      generateKtProviderRouter(
+        options.className,
+        allKtProviderRouter + implProviderMap + kClassProviderMap
+      )
+    }
+    processNowTimes++
     return emptyList()
   }
   
@@ -48,10 +73,26 @@ class KtProviderSymbolProcess(
       }.map { KClassProviderStatement(it) }
   }
   
-  private fun generateKtProvider(data: List<AddFunStatement>) {
-    FileSpec.builder(options.packageName, options.className)
+  private fun findKtProviderRouter(resolver: Resolver): List<AddFunStatement> {
+    if (processNowTimes <= 0) return emptyList()
+    return List(processNowTimes) {
+      getKtProviderRouterName(it)
+    }.mapNotNull {
+      val name = "${options.packageName}.$it"
+      resolver.getClassDeclarationByName(name)
+    }.map {
+      KtProviderRouterStatement(it)
+    }
+  }
+  
+  private fun getKtProviderRouterName(processTimes: Int): String {
+    return "_${options.className}_${processTimes}"
+  }
+  
+  private fun generateKtProviderRouter(name: String, data: List<AddFunStatement>) {
+    FileSpec.builder(options.packageName, name)
       .addType(
-        TypeSpec.objectBuilder(options.className)
+        TypeSpec.objectBuilder(name)
           .addModifiers(KModifier.INTERNAL)
           .superclass(KtProviderRouter::class)
           .addFunction(
@@ -65,14 +106,14 @@ class KtProviderSymbolProcess(
               }.build()
           ).build()
       ).build().apply {
-        try {
-          writeTo(codeGenerator, true, data.mapNotNullTo(hashSetOf()) { it.file })
-        } catch (e: FileAlreadyExistsException) {
-          // An exception will be thrown when generating the KtProviderRouter implementation class repeatedly,
-          // but it cannot be determined by whether the "data" is empty because it could be the second generation.
-          // When data is empty, it is also necessary to generate the KtProviderRouter implementation class.
-        }
+        writeTo(codeGenerator, true, data.mapNotNullTo(hashSetOf()) { it.file })
       }
+  }
+  
+  fun log(msg: String) {
+    if (options.logEnable) {
+      logger.warn("[KtProvider] $msg")
+    }
   }
   
   private interface AddFunStatement {
@@ -91,7 +132,7 @@ class KtProviderSymbolProcess(
       declaration.getAnnotationsByType(ImplProvider::class)
         .forEach {
           val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
-          logger.warn("declaration = ${declaration.toClassName()}, clazzClassName = $clazzClassName")
+          log("@ImplProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = ${it.name}")
           if (clazzClassName != null) {
             if (declaration.classKind == ClassKind.OBJECT) {
               builder.addStatement(
@@ -132,6 +173,7 @@ class KtProviderSymbolProcess(
       declaration.getAnnotationsByType(KClassProvider::class)
         .forEach {
           val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
+          log("@KClassProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = ${it.name}")
           if (clazzClassName != null) {
             builder.addStatement(
               "delegate.addKClassProvider(%T::class, %S) { %T::class }",
@@ -161,15 +203,30 @@ class KtProviderSymbolProcess(
       if (it == null && name.isEmpty()) {
         val superTypesSize = declaration.superTypes.count()
         if (superTypesSize == 0) {
-          throw IllegalArgumentException("${declaration.simpleName} unimplemented clazz. " +
-              "The position is as follows: ${declaration.location}")
+          throw IllegalArgumentException(
+            "${declaration.simpleName} unimplemented clazz. " +
+                "The position is as follows: ${declaration.location}"
+          )
         } else if (superTypesSize != 1) {
-          throw IllegalArgumentException("It is only allowed to omit clazz and name " +
-              "when the parent type has only one interface or class. " +
-              "The position is as follows: ${declaration.location}")
+          throw IllegalArgumentException(
+            "It is only allowed to omit clazz and name " +
+                "when the parent type has only one interface or class. " +
+                "The position is as follows: ${declaration.location}"
+          )
         }
         declaration.superTypes.first().toTypeName()
       } else it
+    }
+  }
+  
+  private inner class KtProviderRouterStatement(
+    val declaration: KSClassDeclaration
+  ) : AddFunStatement {
+    override val file: KSFile?
+      get() = declaration.containingFile
+    
+    override fun addStatement(builder: FunSpec.Builder) {
+      builder.addStatement("%T.initRouter(delegate)", declaration.toClassName())
     }
   }
 }

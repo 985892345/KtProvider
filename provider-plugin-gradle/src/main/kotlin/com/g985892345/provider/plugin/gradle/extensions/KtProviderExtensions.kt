@@ -1,6 +1,7 @@
 package com.g985892345.provider.plugin.gradle.extensions
 
 import com.g985892345.provider.plugin.gradle.BuildConfig
+import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Project
 
 /**
@@ -41,6 +42,25 @@ abstract class KtProviderExtensions(private val project: Project) {
     "commonMainApi",
     "commonMainImplementation",
   )
+  
+  /**
+   * Whether to enable logs
+   */
+  fun setLogEnable(enable: Boolean) {
+    project.extensions.configure(KspExtension::class.java) {
+      it.arg("ktProviderLogEnable", enable.toString())
+    }
+  }
+  
+  /**
+   * Set the number of training rotations
+   */
+  fun setProcessTimes(times: Int) {
+    check(times >= 1) { "times must > 1" }
+    project.extensions.configure(KspExtension::class.java) {
+      it.arg("ktProviderProcessTimes", times.toString())
+    }
+  }
   
   companion object {
     

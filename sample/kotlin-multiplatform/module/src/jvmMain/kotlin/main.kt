@@ -1,4 +1,5 @@
 import com.IHelloWorldService
+import com.IImplService
 import com.g985892345.provider.ktprovider.sample.kotlinmultiplatform.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProviderManager
 
@@ -12,4 +13,5 @@ fun main() {
   ModuleKtProviderInitializer.tryInitKtProvider() // init service
   commonMain()
   println(KtProviderManager.getImplOrThrow(IHelloWorldService::class).get())
+  println(KtProviderManager.getImplOrThrow(IImplService::class, name = "test").get())
 }
