@@ -143,7 +143,7 @@ class KtProviderSymbolProcess(
               )
             } else {
               builder.addStatement(
-                "delegate.addImplProvider(%T::class, %S, ::%T)",
+                "delegate.addImplProvider(%T::class, %S) { %T() }",
                 clazzClassName, it.name, declaration.toClassName()
               )
             }
@@ -155,7 +155,7 @@ class KtProviderSymbolProcess(
               )
             } else {
               builder.addStatement(
-                "delegate.addImplProvider(null, %S, ::%T)",
+                "delegate.addImplProvider(null, %S) { %T() }",
                 it.name, declaration.toClassName()
               )
             }
