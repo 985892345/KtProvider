@@ -79,9 +79,14 @@ class KtProviderInitializerGenerator(
   private fun configCreateKtProviderTask(ktProvider: KtProviderExtensions): TaskProvider<Task> {
     val ktProviderRouterPackageName = KtProviderExtensions.getPackageName(project)
     val ktProviderRouterClassName = "${KtProviderExtensions.getClassNameSuffix(project)}KtProviderRouter"
+    val selfInitializerClass = KtProviderExtensions.getInitializerClass(project)
+    val initializerPackageName = selfInitializerClass.substringBeforeLast(".")
+    val initializerClassName = selfInitializerClass.substringAfterLast(".")
     project.extensions.configure(KspExtension::class.java) {
       it.arg("ktProviderRouterPackageName", ktProviderRouterPackageName)
       it.arg("ktProviderRouterClassName", ktProviderRouterClassName)
+      it.arg("ktProviderInitializerPackageName", initializerPackageName)
+      it.arg("ktProviderInitializerClassName", initializerClassName)
     }
     return project.tasks.register(taskName) { task ->
       task.group = "ktProvider"
@@ -90,10 +95,9 @@ class KtProviderInitializerGenerator(
       task.inputs.property("configurations", ktProvider.configurations)
       task.outputs.dir(ktProviderSource)
       task.doLast {
-        val selfInitializerClass = KtProviderExtensions.getInitializerClass(project)
         val text = getKtProviderInitializerTemplate(
-          selfInitializerClass,
-          "$ktProviderRouterPackageName.$ktProviderRouterClassName",
+          initializerPackageName,
+          initializerClassName,
           dependModuleProjects.filter { dependProject ->
             dependProject.extensions.findByType(KtProviderExtensions::class.java) != null
           }.map { dependProject ->
@@ -170,21 +174,33 @@ class KtProviderInitializerGenerator(
 }
 
 private fun getKtProviderInitializerTemplate(
-  selfInitializerClass: String,
-  ktProviderRouterClass: String,
+  initializerPackageName: String,
+  initializerClassName: String,
   invokeInitializerClass: List<String>,
 ): String = """
-  package ${selfInitializerClass.substringBeforeLast(".")}
+  package $initializerPackageName
   
   import com.g985892345.provider.api.init.KtProviderInitializer
   import com.g985892345.provider.api.init.KtProviderRouter
   
-  object ${selfInitializerClass.substringAfterLast(".")} : KtProviderInitializer() {
+  object $initializerClassName : KtProviderInitializer() {
   
-    override val router: KtProviderRouter = $ktProviderRouterClass
+    override val router: KtProviderRouter = getRouter()
     
     override val otherModuleKtProvider: List<KtProviderInitializer> = listOf(
       ${invokeInitializerClass.joinToString(",\n      ")}
     )
+  }
+  
+  private fun $initializerClassName.getRouter(
+    a0: Unit = Unit,
+    a1: Unit = Unit,
+    a2: Unit = Unit,
+    a3: Unit = Unit,
+    a4: Unit = Unit,
+    a5: Unit = Unit,
+    a6: Unit = Unit,
+  ): KtProviderRouter {
+    return KtProviderRouter.Empty
   }
 """.trimIndent()

@@ -9,4 +9,10 @@ package com.g985892345.provider.api.init
 abstract class KtProviderRouter {
   
   abstract fun initRouter(delegate: IKtProviderDelegate)
+  
+  companion object {
+    val Empty = object : KtProviderRouter() {
+      override fun initRouter(delegate: IKtProviderDelegate) {}
+    }
+  }
 }

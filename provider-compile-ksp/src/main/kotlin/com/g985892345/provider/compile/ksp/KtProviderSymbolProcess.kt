@@ -7,15 +7,11 @@ import com.g985892345.provider.api.init.KtProviderRouter
 import com.google.devtools.ksp.KSTypeNotPresentException
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAnnotationsByType
-import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.symbol.ClassKind
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFile
+import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
@@ -34,65 +30,53 @@ class KtProviderSymbolProcess(
   private val options: Options,
 ) : SymbolProcessor {
   
+  companion object {
+    private const val MAX_PROCESS_TIMES = 6
+  }
+  
   private var processNowTimes = 0
   
+  private var lastKtProviderRouterClassName: ClassName? = null
+  
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    if (processNowTimes < options.processTimes - 1) {
-      val implProviderMap = findImplProvider(resolver)
-      val kClassProviderMap = findKClassProvider(resolver)
-      generateKtProviderRouter(
-        getKtProviderRouterName(processNowTimes),
-        (implProviderMap + kClassProviderMap).toList()
-      )
-    } else if (processNowTimes == options.processTimes - 1) {
-      val allKtProviderRouter = findKtProviderRouter(resolver)
-      val implProviderMap = findImplProvider(resolver)
-      val kClassProviderMap = findKClassProvider(resolver)
-      generateKtProviderRouter(
-        options.className,
-        allKtProviderRouter + implProviderMap + kClassProviderMap
-      )
-    }
+    if (processNowTimes >= MAX_PROCESS_TIMES) return emptyList()
+    val implProviderMap = findImplProvider(resolver)
+    val kClassProviderMap = findKClassProvider(resolver)
+    val statements = implProviderMap + kClassProviderMap
+    generateKtProviderRouter(processNowTimes, statements)
     processNowTimes++
     return emptyList()
   }
   
-  private fun findImplProvider(resolver: Resolver): Sequence<AddFunStatement> {
+  private fun findImplProvider(resolver: Resolver): List<AddFunStatement> {
     return resolver.getSymbolsWithAnnotation(ImplProvider::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
       .filter {
         it.classKind == ClassKind.CLASS || it.classKind == ClassKind.OBJECT
-      }.map { ImplProviderStatement(it) }
+      }.map { ImplProviderStatement(it) }.toList()
   }
   
-  private fun findKClassProvider(resolver: Resolver): Sequence<AddFunStatement> {
+  private fun findKClassProvider(resolver: Resolver): List<AddFunStatement> {
     return resolver.getSymbolsWithAnnotation(KClassProvider::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
       .filter {
         it.classKind == ClassKind.CLASS || it.classKind == ClassKind.OBJECT || it.classKind == ClassKind.INTERFACE
-      }.map { KClassProviderStatement(it) }
-  }
-  
-  private fun findKtProviderRouter(resolver: Resolver): List<AddFunStatement> {
-    if (processNowTimes <= 0) return emptyList()
-    return List(processNowTimes) {
-      getKtProviderRouterName(it)
-    }.mapNotNull {
-      val name = "${options.packageName}.$it"
-      resolver.getClassDeclarationByName(name)
-    }.map {
-      KtProviderRouterStatement(it)
-    }
+      }.map { KClassProviderStatement(it) }.toList()
   }
   
   private fun getKtProviderRouterName(processTimes: Int): String {
     return "_${options.className}_${processTimes}"
   }
   
-  private fun generateKtProviderRouter(name: String, data: List<AddFunStatement>) {
-    FileSpec.builder(options.packageName, name)
+  private fun generateKtProviderRouter(
+    processNowTimes: Int,
+    data: List<AddFunStatement>,
+  ) {
+    if (data.isEmpty()) return
+    val ktProviderRouterName = getKtProviderRouterName(processNowTimes)
+    FileSpec.builder(options.packageName, ktProviderRouterName)
       .addType(
-        TypeSpec.objectBuilder(name)
+        TypeSpec.objectBuilder(ktProviderRouterName)
           .addModifiers(KModifier.INTERNAL)
           .superclass(KtProviderRouter::class)
           .addFunction(
@@ -100,14 +84,32 @@ class KtProviderSymbolProcess(
               .addModifiers(KModifier.OVERRIDE)
               .addParameter("delegate", IKtProviderDelegate::class)
               .apply {
+                lastKtProviderRouterClassName?.let {
+                  addStatement("%T.initRouter(delegate)", it)
+                }
                 data.forEach {
                   it.addStatement(this)
                 }
               }.build()
           ).build()
-      ).build().apply {
-        writeTo(codeGenerator, true, data.mapNotNullTo(hashSetOf()) { it.file })
-      }
+      ).addFunction(
+        FunSpec.builder("getRouter")
+          .addModifiers(KModifier.INTERNAL)
+          .returns(KtProviderRouter::class)
+          .receiver(ClassName(options.initializerPackageName, options.initializerClassName))
+          .addStatement("return $ktProviderRouterName")
+          .apply {
+            repeat(MAX_PROCESS_TIMES - processNowTimes - 1) {
+              addParameter(
+                ParameterSpec.builder("a$it", Unit::class)
+                  .defaultValue("%T", Unit::class.asClassName())
+                  .build()
+              )
+            }
+          }
+          .build()
+      ).build().writeTo(codeGenerator, true, data.mapNotNullTo(hashSetOf()) { it.file })
+    lastKtProviderRouterClassName = ClassName(options.packageName, ktProviderRouterName)
   }
   
   fun log(msg: String) {
@@ -216,17 +218,6 @@ class KtProviderSymbolProcess(
         }
         declaration.superTypes.first().toTypeName()
       } else it
-    }
-  }
-  
-  private inner class KtProviderRouterStatement(
-    val declaration: KSClassDeclaration
-  ) : AddFunStatement {
-    override val file: KSFile?
-      get() = declaration.containingFile
-    
-    override fun addStatement(builder: FunSpec.Builder) {
-      builder.addStatement("%T.initRouter(delegate)", declaration.toClassName())
     }
   }
 }

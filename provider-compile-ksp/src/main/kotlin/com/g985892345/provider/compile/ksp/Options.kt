@@ -9,13 +9,17 @@ package com.g985892345.provider.compile.ksp
 class Options(
   val packageName: String,
   val className: String,
+  val initializerPackageName: String,
+  val initializerClassName: String,
   val logEnable: Boolean,
-  val processTimes: Int,
+  val maxProcessTimes: Int,
 ) {
   constructor(options: Map<String, String>) : this(
     options["ktProviderRouterPackageName"]!!, // It assigned by the Gradle plugin
     options["ktProviderRouterClassName"]!!, // It assigned by the Gradle plugin
+    options["ktProviderInitializerPackageName"]!!, // It assigned by the Gradle plugin
+    options["ktProviderInitializerClassName"]!!, // It assigned by the Gradle plugin
     options["ktProviderLogEnable"]?.toBooleanStrictOrNull() ?: false,
-    options["ktProviderProcessTimes"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1,
+    options["ktProviderMaxProcessTimes"]?.toIntOrNull()?.coerceAtLeast(1) ?: 3,
   )
 }

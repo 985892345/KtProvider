@@ -52,16 +52,6 @@ abstract class KtProviderExtensions(private val project: Project) {
     }
   }
   
-  /**
-   * Set the number of training rotations
-   */
-  fun setProcessTimes(times: Int) {
-    check(times >= 1) { "times must > 1" }
-    project.extensions.configure(KspExtension::class.java) {
-      it.arg("ktProviderProcessTimes", times.toString())
-    }
-  }
-  
   companion object {
     
     fun getPackageName(project: Project): String {
@@ -70,8 +60,7 @@ abstract class KtProviderExtensions(private val project: Project) {
       var p = project
       while (p.parent != null) {
         p = p.parent!!
-        val projectNamePackage = p.name
-        packageName = "${projectNamePackage}.$packageName"
+        packageName = "${p.name}.$packageName"
       }
       packageName = prefix + packageName.lowercase().replace(Regex("[^0-9a-zA-Z.]"), "")
       return packageName
