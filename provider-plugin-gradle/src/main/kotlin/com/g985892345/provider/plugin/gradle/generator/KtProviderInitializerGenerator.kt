@@ -99,7 +99,7 @@ class KtProviderInitializerGenerator(
           initializerPackageName,
           initializerClassName,
           dependModuleProjects.filter { dependProject ->
-            dependProject.extensions.findByType(KtProviderExtensions::class.java) != null
+            dependProject.extensions.findByName("ktProvider") != null
           }.map { dependProject ->
             KtProviderExtensions.getInitializerClass(dependProject)
           },
@@ -192,6 +192,9 @@ private fun getKtProviderInitializerTemplate(
     )
   }
   
+  // KSP will generate functions with the same name but fewer arguments,
+  // which will have a higher priority
+  @Suppress("UNUSED_PARAMETER", "UnusedReceiverParameter")
   private fun $initializerClassName.getRouter(
     a0: Unit = Unit,
     a1: Unit = Unit,
