@@ -107,6 +107,12 @@ class KtProviderSymbolProcess(
               )
             }
           }
+          .addAnnotation(
+            AnnotationSpec.builder(Suppress::class)
+              .addMember("%S", "UNUSED_PARAMETER")
+              .addMember("%S", "UnusedReceiverParameter")
+              .build()
+          )
           .build()
       ).build().writeTo(codeGenerator, true, data.mapNotNullTo(hashSetOf()) { it.file })
     lastKtProviderRouterClassName = ClassName(options.packageName, ktProviderRouterName)
