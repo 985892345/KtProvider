@@ -70,9 +70,7 @@ dependencies {
 Kotlin/Jvm: It is recommended to perform initialization in the `main` function.
 ```kotlin
 fun main() {
-  // Invoke the automatically generated XXXKtProviderInitializer class (module name + KtProviderInitializer)
-  // This class will be automatically generated during the build process. 
-  // Alternatively, you can directly invoke the generateXXXKtProviderInitializerImpl Gradle task to generate it.
+  // Invoking the generated XXXKtProviderInitializer (Module Name + KtProviderInitializer) via KSP
   XXXKtProviderInitializer.tryInitKtProvider()
 }
 ```
@@ -135,21 +133,8 @@ println(service.get())
 ```
 
 ## Implementation principle
-**1. Automatically generate the implementation class for `KtProviderInitializer`**
-
-The KtProvider Gradle plugin automatically generates the implementation class for `KtProviderInitializer`. 
-Then, based on the dependency relationships between modules, 
-it automatically invokes the `tryInitKtProvider` method of the implementation classes in other modules.
-Therefore, you just need to call the `tryInitKtProvider` method in the startup module to load all routes.
-
-**Please note that this mechanism only allows `implementation` and `api` dependencies on other modules.**
-
-
-**2. KSP parses annotations within the module**
-
-Based on KSP, it parses annotations within the module and generates the implementation class for `KtProviderRouter`. 
-Then, the previously generated implementation class for `KtProviderInitializer` automatically 
-invokes the implementation class of `KtProviderRouter`.
+1. The KtProvider's Gradle plugin automatically resolves the inter-module dependencies and passes this information to KSP to generate an implementation class for KtProviderInitializer. 
+2. KSP scans annotations to generate an implementation class for KtProviderRouter.
 
 Similar to the following code:
 ```kotlin

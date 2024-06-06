@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 plugins {
@@ -24,10 +26,9 @@ kotlin {
     }
   }
   androidTarget {
-    compilations.all {
-      kotlinOptions {
-        jvmTarget = "1.8"
-      }
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_1_8)
     }
   }
   @OptIn(ExperimentalWasmDsl::class)
@@ -45,19 +46,20 @@ kotlin {
     commonMain.dependencies {
       implementation(projects.sample.kotlinMultiplatform.api)
       implementation(projects.sample.kotlinMultiplatform.impl)
-      implementation(ktProvider.manager)
+      implementation(projects.providerApi)
+      implementation(projects.providerManager)
     }
   }
 }
 
 dependencies {
-  add("kspCommonMainMetadata", ktProvider.ksp)
-  add("kspAndroid", ktProvider.ksp)
-  add("kspJvm", ktProvider.ksp)
-  add("kspIosX64", ktProvider.ksp)
-  add("kspIosArm64", ktProvider.ksp)
-  add("kspIosSimulatorArm64", ktProvider.ksp)
-  add("kspWasmJs", ktProvider.ksp)
+  add("kspCommonMainMetadata", projects.providerCompileKsp)
+  add("kspAndroid", projects.providerCompileKsp)
+  add("kspJvm", projects.providerCompileKsp)
+  add("kspIosX64", projects.providerCompileKsp)
+  add("kspIosArm64", projects.providerCompileKsp)
+  add("kspIosSimulatorArm64", projects.providerCompileKsp)
+  add("kspWasmJs", projects.providerCompileKsp)
 }
 
 android {

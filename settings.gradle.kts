@@ -1,6 +1,6 @@
 pluginManagement {
+  includeBuild("provider-plugin-gradle")
   repositories {
-    mavenLocal()
     mavenCentral()
     google()
     gradlePluginPortal()
@@ -10,7 +10,6 @@ pluginManagement {
 }
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "KtProvider"
-include("provider-plugin-gradle")
 include("provider-compile-ksp")
 include("provider-manager")
 include("provider-api")

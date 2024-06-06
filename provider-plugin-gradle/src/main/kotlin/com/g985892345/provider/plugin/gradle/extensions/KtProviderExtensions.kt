@@ -52,6 +52,16 @@ abstract class KtProviderExtensions(private val project: Project) {
     }
   }
   
+  /**
+   * Set the maximum number of iterations that can be handled by the polling process.
+   * Defaults to 5 times.
+   */
+  fun setProcessMaxCount(processMaxCount: Int) {
+    project.extensions.configure(KspExtension::class.java) {
+      it.arg("ktProviderProcessMaxCount", processMaxCount.toString())
+    }
+  }
+  
   companion object {
     
     fun getPackageName(project: Project): String {

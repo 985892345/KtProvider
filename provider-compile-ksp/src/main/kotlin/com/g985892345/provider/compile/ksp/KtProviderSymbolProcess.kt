@@ -3,15 +3,20 @@ package com.g985892345.provider.compile.ksp
 import com.g985892345.provider.api.annotation.ImplProvider
 import com.g985892345.provider.api.annotation.KClassProvider
 import com.g985892345.provider.api.init.IKtProviderDelegate
+import com.g985892345.provider.api.init.KtProviderInitializer
 import com.g985892345.provider.api.init.KtProviderRouter
 import com.google.devtools.ksp.KSTypeNotPresentException
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAnnotationsByType
+import com.google.devtools.ksp.getKotlinClassByName
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFile
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
@@ -30,22 +35,81 @@ class KtProviderSymbolProcess(
   private val options: Options,
 ) : SymbolProcessor {
   
-  companion object {
-    private const val MAX_PROCESS_TIMES = 6
-  }
-  
-  private var processNowTimes = 0
+  private var processNowCount = 1
   
   private var lastKtProviderRouterClassName: ClassName? = null
   
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    if (processNowTimes >= MAX_PROCESS_TIMES) return emptyList()
+    if (processNowCount > options.processMaxCount) return emptyList()
+    if (processNowCount == 1) {
+      log("dependModuleProjects = " + options.dependModuleProjects.joinToString("\n"))
+      generateKtProviderInitializer(resolver)
+    }
     val implProviderMap = findImplProvider(resolver)
     val kClassProviderMap = findKClassProvider(resolver)
     val statements = implProviderMap + kClassProviderMap
-    generateKtProviderRouter(processNowTimes, statements)
-    processNowTimes++
+    generateKtProviderRouter(processNowCount, statements)
+    processNowCount++
     return emptyList()
+  }
+  
+  @OptIn(KspExperimental::class)
+  private fun generateKtProviderInitializer(resolver: Resolver) {
+    val otherModuleInitializers = options.dependModuleProjects.mapNotNull {
+      resolver.getKotlinClassByName(it)
+    }
+    FileSpec.builder(options.initializerPackageName, options.initializerClassName)
+      .addType(
+        TypeSpec.objectBuilder(options.initializerClassName)
+          .superclass(KtProviderInitializer::class)
+          .addProperty(
+            PropertySpec.builder("router", KtProviderRouter::class)
+              .addModifiers(KModifier.OVERRIDE)
+              .initializer("getRouter()")
+              .build()
+          )
+          .addProperty(
+            PropertySpec.builder("otherModuleKtProvider", typeNameOf<List<KtProviderInitializer>>())
+              .addModifiers(KModifier.OVERRIDE)
+              .apply {
+                if (otherModuleInitializers.isEmpty()) {
+                  initializer("emptyList()")
+                } else {
+                  initializer(
+                    "listOf(${otherModuleInitializers.joinToString { "%T" }})",
+                    *otherModuleInitializers.map { it.toClassName() }.toTypedArray())
+                }
+              }
+              .build()
+          )
+          .build()
+      ).addFunction(
+        FunSpec.builder("getRouter")
+          .addModifiers(KModifier.PRIVATE)
+          .returns(KtProviderRouter::class)
+          .receiver(ClassName(options.initializerPackageName, options.initializerClassName))
+          .addStatement("return KtProviderRouter.Empty")
+          .addAnnotation(
+            AnnotationSpec.builder(Suppress::class)
+              .addMember("%S", "UNUSED_PARAMETER")
+              .addMember("%S", "UnusedReceiverParameter")
+              .build()
+          )
+          .apply {
+            repeat(options.processMaxCount + 1) {
+              addParameter(
+                ParameterSpec.builder("a$it", Unit::class)
+                  .defaultValue("Unit")
+                  .build()
+              )
+            }
+          }.build()
+      )
+      .build().writeTo(
+        codeGenerator,
+        true,
+        otherModuleInitializers.mapNotNull { it.containingFile }
+      )
   }
   
   private fun findImplProvider(resolver: Resolver): List<AddFunStatement> {
@@ -65,7 +129,7 @@ class KtProviderSymbolProcess(
   }
   
   private fun getKtProviderRouterName(processTimes: Int): String {
-    return "_${options.className}_${processTimes}"
+    return "_${options.className}_${processTimes - 1}"
   }
   
   private fun generateKtProviderRouter(
@@ -99,7 +163,7 @@ class KtProviderSymbolProcess(
           .receiver(ClassName(options.initializerPackageName, options.initializerClassName))
           .addStatement("return $ktProviderRouterName")
           .apply {
-            repeat(MAX_PROCESS_TIMES - processNowTimes - 1) {
+            repeat(options.processMaxCount - processNowTimes + 1) {
               addParameter(
                 ParameterSpec.builder("a$it", Unit::class)
                   .defaultValue("%T", Unit::class.asClassName())

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 plugins {
@@ -11,10 +13,9 @@ kotlin {
   iosArm64()
   iosSimulatorArm64()
   androidTarget {
-    compilations.all {
-      kotlinOptions {
-        jvmTarget = "1.8"
-      }
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_1_8)
     }
   }
   @OptIn(ExperimentalWasmDsl::class)

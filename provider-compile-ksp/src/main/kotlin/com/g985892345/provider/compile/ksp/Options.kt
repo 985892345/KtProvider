@@ -12,14 +12,16 @@ class Options(
   val initializerPackageName: String,
   val initializerClassName: String,
   val logEnable: Boolean,
-  val maxProcessTimes: Int,
+  val dependModuleProjects: List<String>,
+  val processMaxCount: Int,
 ) {
   constructor(options: Map<String, String>) : this(
-    options["ktProviderRouterPackageName"]!!, // It assigned by the Gradle plugin
-    options["ktProviderRouterClassName"]!!, // It assigned by the Gradle plugin
-    options["ktProviderInitializerPackageName"]!!, // It assigned by the Gradle plugin
-    options["ktProviderInitializerClassName"]!!, // It assigned by the Gradle plugin
-    options["ktProviderLogEnable"]?.toBooleanStrictOrNull() ?: false,
-    options["ktProviderMaxProcessTimes"]?.toIntOrNull()?.coerceAtLeast(1) ?: 3,
+    packageName = options["ktProviderRouterPackageName"]!!, // It assigned by the Gradle plugin
+    className = options["ktProviderRouterClassName"]!!, // It assigned by the Gradle plugin
+    initializerPackageName = options["ktProviderInitializerPackageName"]!!, // It assigned by the Gradle plugin
+    initializerClassName = options["ktProviderInitializerClassName"]!!, // It assigned by the Gradle plugin
+    logEnable = options["ktProviderLogEnable"]?.toBooleanStrictOrNull() ?: false,
+    dependModuleProjects = options["ktProviderDependModuleProjects"]?.split("&") ?: emptyList(),
+    processMaxCount = options["ktProviderProcessMaxCount"]?.toInt() ?: 5,
   )
 }
