@@ -12,6 +12,7 @@ dependencies {
 
 publisher {
   description = "the gradle plugin of KtProvider"
+  version = gradle.parent?.rootProject!!.properties["VERSION"].toString()
   createGradlePlugin(
     name = "KtProvider",
     id = "io.github.985892345.KtProvider",
@@ -23,7 +24,7 @@ publisher {
 
 buildConfig {
   packageName("com.g985892345.provider.plugin.gradle")
-  buildConfigField("String", "VERSION", "\"${properties["VERSION"].toString()}\"")
+  buildConfigField("String", "VERSION", "\"${gradle.parent?.rootProject!!.properties["VERSION"].toString()}\"")
   buildConfigField("String", "GROUP", "\"${publisher.groupId}\"")
 }
 

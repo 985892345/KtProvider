@@ -45,19 +45,20 @@ kotlin {
     commonMain.dependencies {
       implementation(projects.sample.kotlinMultiplatform.api)
       implementation(projects.sample.kotlinMultiplatform.impl)
-      implementation(ktProvider.manager)
+      implementation(projects.providerApi)
+      implementation(projects.providerManager)
     }
   }
 }
 
 dependencies {
-  add("kspCommonMainMetadata", ktProvider.ksp)
-  add("kspAndroid", ktProvider.ksp)
-  add("kspJvm", ktProvider.ksp)
-  add("kspIosX64", ktProvider.ksp)
-  add("kspIosArm64", ktProvider.ksp)
-  add("kspIosSimulatorArm64", ktProvider.ksp)
-  add("kspWasmJs", ktProvider.ksp)
+  add("kspCommonMainMetadata", projects.providerCompileKsp)
+  add("kspAndroid", projects.providerCompileKsp)
+  add("kspJvm", projects.providerCompileKsp)
+  add("kspIosX64", projects.providerCompileKsp)
+  add("kspIosArm64", projects.providerCompileKsp)
+  add("kspIosSimulatorArm64", projects.providerCompileKsp)
+  add("kspWasmJs", projects.providerCompileKsp)
 }
 
 android {
