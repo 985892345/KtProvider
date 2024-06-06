@@ -65,8 +65,7 @@ dependencies {
 Kotlin/Jvm: 建议在 `main` 函数进行初始化
 ```kotlin
 fun main() {
-  // 调用自动生成的 XXXKtProviderInitializer (模块名+KtProviderInitializer)
-  // 会在构建时自动生成，也可以直接调用 generateXXXKtProviderInitializerImpl gradle 任务直接生成
+  // 调用 KSP 生成的 XXXKtProviderInitializer (模块名+KtProviderInitializer)
   XXXKtProviderInitializer.tryInitKtProvider()
 }
 ```
@@ -129,18 +128,8 @@ println(service.get())
 ```
 
 ## 实现原理
-**1. 自动生成 KtProviderInitializer 实现类**
-
-KtProvider 的 gradle 插件会自动生成 `KtProviderInitializer` 的实现类，
-然后根据模块之间的依赖关系，自动调用其他模块实现类的 `tryInitKtProvider()` 方法，
-所以只需要在启动模块中调用 `tryInitKtProvider()` 方法即可加载全部路由
-
-**（注意：只允许 implementation、api 依赖其他模块）**
-
-**2. KSP 解析模块内注解**
-
-基于 KSP，解析模块内注解，并生成 `KtProviderRouter` 的实现类，然后之前生成的 `KtProviderInitializer` 的实现类
-会自动调用 `KtProviderRouter` 实现类
+1. KtProvider 的 gradle 插件会自动解析模块之间的依赖关系并传递给 KSP 生成 `KtProviderInitializer` 的实现类
+2. KSP 扫描注解生成 `KtProviderRouter` 的实现类
 
 类似于以下代码:
 ```kotlin
