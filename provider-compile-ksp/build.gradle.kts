@@ -11,5 +11,9 @@ dependencies {
 }
 
 publisher {
+  masterDeveloper = DeveloperInformation(
+    githubName = "985892345",
+    email = "guo985892345@formail.com"
+  )
   description = "the KSP of KtProvider"
 }

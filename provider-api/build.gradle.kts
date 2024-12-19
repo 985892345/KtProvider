@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
@@ -27,5 +27,9 @@ kotlin {
 }
 
 publisher {
+  masterDeveloper = DeveloperInformation(
+    githubName = "985892345",
+    email = "guo985892345@formail.com"
+  )
   description = "the api of KtProvider"
 }
