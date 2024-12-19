@@ -1,5 +1,5 @@
 import com.IHelloWorldService
-import com.g985892345.provider.manager.KtProviderManager
+import com.g985892345.provider.manager.KtProvider
 
 /**
  * .
@@ -10,5 +10,5 @@ import com.g985892345.provider.manager.KtProviderManager
 
 fun getHelloWorld(): String {
   commonMain()
-  return KtProviderManager.getImplOrThrow(IHelloWorldService::class).get()
+  return KtProvider.impl(IHelloWorldService::class).get()
 }

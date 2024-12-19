@@ -6,7 +6,7 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.IHelloWorldService
-import com.g985892345.provider.manager.KtProviderManager
+import com.g985892345.provider.manager.KtProvider
 import commonMain
 
 /**
@@ -25,7 +25,7 @@ class MainActivity : Activity() {
           FrameLayout.LayoutParams.MATCH_PARENT,
           FrameLayout.LayoutParams.MATCH_PARENT
         )
-        text = KtProviderManager.getImplOrThrow(IHelloWorldService::class).get()
+        text = KtProvider.impl(IHelloWorldService::class).get()
         gravity = Gravity.CENTER
       }
     )

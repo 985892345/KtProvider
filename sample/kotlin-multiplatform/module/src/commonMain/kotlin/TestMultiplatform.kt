@@ -1,6 +1,6 @@
 import com.IImplService
 import com.IKClassService
-import com.g985892345.provider.manager.KtProviderManager
+import com.g985892345.provider.manager.KtProvider
 
 /**
  * .
@@ -10,25 +10,25 @@ import com.g985892345.provider.manager.KtProviderManager
  */
 fun commonMain() {
   judge {
-    KtProviderManager.getImplOrThrow(IImplService::class, "class1").get() ==
-        KtProviderManager.getImplOrThrow(IImplService::class, "class2").get()
+    KtProvider.impl(IImplService::class, "class1").get() ==
+        KtProvider.impl(IImplService::class, "class2").get()
   }
   
   judge {
-    val defaultObjectImplServiceImpl = KtProviderManager.getImplOrThrow(IImplService::class)
+    val defaultObjectImplServiceImpl = KtProvider.impl(IImplService::class)
     arrayOf(
-      KtProviderManager.getImplOrThrow(IImplService::class, "object1"),
-      KtProviderManager.getImplOrThrow(IImplService::class, "object2"),
+      KtProvider.impl(IImplService::class, "object1"),
+      KtProvider.impl(IImplService::class, "object2"),
     ).all {
       it.get() === defaultObjectImplServiceImpl.get()
     }
   }
   
   judge {
-    val defaultKClassImplServiceImpl = KtProviderManager.getKClassOrThrow(IKClassService::class)
+    val defaultKClassImplServiceImpl = KtProvider.clazz(IKClassService::class)
     arrayOf(
-      KtProviderManager.getKClassOrThrow(IKClassService::class, "KClass1"),
-      KtProviderManager.getKClassOrThrow(IKClassService::class, "KClass2"),
+      KtProvider.clazz(IKClassService::class, "KClass1"),
+      KtProvider.clazz(IKClassService::class, "KClass2"),
     ).all {
       it == defaultKClassImplServiceImpl
     }
