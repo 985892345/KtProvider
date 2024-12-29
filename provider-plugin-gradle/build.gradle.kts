@@ -16,7 +16,7 @@ publisher {
     email = "guo985892345@formail.com"
   )
   description = "the gradle plugin of KtProvider"
-  version = gradle.parent?.rootProject!!.properties["VERSION"].toString()
+  version = gradle.parent!!.rootProject.properties["VERSION"].toString()
   createGradlePlugin(
     name = "KtProvider",
     id = "io.github.985892345.KtProvider",
@@ -24,6 +24,7 @@ publisher {
     displayName = "服务提供插件",
     tags = listOf("kotlin Multiplatform", "KSP", "Service Provider")
   )
+  licenseFile = { project.gradle.parent!!.rootProject.rootDir.resolve("LICENSE") }
 }
 
 buildConfig {

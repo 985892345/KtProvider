@@ -123,7 +123,7 @@ class TestServiceImpl : ITestService {
 
 使用接口
 ```kotlin
-val service = KtProviderManager.getImplOrNull(ITestService::class, "test")
+val service = KtProvider.implOrNull(ITestService::class, "test")
 println(service.get())
 ```
 

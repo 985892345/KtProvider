@@ -128,7 +128,7 @@ class TestServiceImpl : ITestService {
 
 Use interface
 ```kotlin
-val service = KtProviderManager.getImplOrNull(ITestService::class, "test")
+val service = KtProvider.implOrNull(ITestService::class, "test")
 println(service.get())
 ```
 
