@@ -267,7 +267,8 @@ class KtProviderSymbolProcess(
       val clazz = getClazz.invoke()
       if (clazz == Void::class || clazz == Nothing::class) null else clazz.asClassName()
     } catch (e: KSTypeNotPresentException) {
-      e.ksType.toClassName()
+      // %T::class does not require generics, so ksType.toTypeName() cannot be used.
+      (e.ksType.declaration as? KSClassDeclaration)?.toClassName() ?: return null
     } catch (e: NoSuchElementException) {
       // Retrieving the default value of clazz in Native will fail here.
       null
@@ -286,7 +287,8 @@ class KtProviderSymbolProcess(
                 "The position is as follows: ${declaration.location}"
           )
         }
-        declaration.superTypes.first().toTypeName()
+        // // %T::class does not require generics, so ksType.toTypeName() cannot be used.
+        (declaration.superTypes.first().resolve().declaration as? KSClassDeclaration)?.toClassName()
       } else it
     }
   }
