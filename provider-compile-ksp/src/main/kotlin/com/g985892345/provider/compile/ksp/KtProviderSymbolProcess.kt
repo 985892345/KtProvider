@@ -116,7 +116,7 @@ class KtProviderSymbolProcess(
     return resolver.getSymbolsWithAnnotation(ImplProvider::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
       .filter {
-        it.classKind == ClassKind.CLASS || it.classKind == ClassKind.OBJECT
+        it.classKind == ClassKind.CLASS || it.classKind == ClassKind.OBJECT || it.classKind == ClassKind.ENUM_ENTRY
       }.map { ImplProviderStatement(it) }.toList()
   }
   
@@ -206,7 +206,7 @@ class KtProviderSymbolProcess(
           val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
           log("@ImplProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = ${it.name}")
           if (clazzClassName != null) {
-            if (declaration.classKind == ClassKind.OBJECT) {
+            if (declaration.classKind == ClassKind.OBJECT || declaration.classKind == ClassKind.ENUM_ENTRY) {
               builder.addStatement(
                 "delegate.addImplProvider(%T::class, %S) { %T }",
                 clazzClassName, it.name, declaration.toClassName()
@@ -218,7 +218,7 @@ class KtProviderSymbolProcess(
               )
             }
           } else {
-            if (declaration.classKind == ClassKind.OBJECT) {
+            if (declaration.classKind == ClassKind.OBJECT || declaration.classKind == ClassKind.ENUM_ENTRY) {
               builder.addStatement(
                 "delegate.addImplProvider(null, %S) { %T }",
                 it.name, declaration.toClassName()
