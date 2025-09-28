@@ -18,8 +18,8 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFile
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import kotlin.reflect.KClass
 
@@ -69,8 +69,10 @@ class KtProviderSymbolProcess(
               .build()
           )
           .addProperty(
-            PropertySpec.builder("otherModuleKtProvider", typeNameOf<List<KtProviderInitializer>>())
-              .addModifiers(KModifier.OVERRIDE)
+            PropertySpec.builder(
+              "otherModuleKtProvider",
+              List::class.asClassName().parameterizedBy(KtProviderInitializer::class.asClassName())
+            ).addModifiers(KModifier.OVERRIDE)
               .apply {
                 if (otherModuleInitializers.isEmpty()) {
                   initializer("emptyList()")

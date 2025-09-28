@@ -36,12 +36,7 @@ abstract class KtProviderExtensions(private val project: Project) {
   /**
    * dependent configuration
    */
-  val configurations = mutableListOf(
-    "api",
-    "implementation",
-    "commonMainApi",
-    "commonMainImplementation",
-  )
+  var configurations = Regex("(api)|(implementation)|(.+Api)|(.+Implementation)")
   
   /**
    * Whether to enable logs
@@ -64,29 +59,28 @@ abstract class KtProviderExtensions(private val project: Project) {
   
   companion object {
     
-    fun getPackageName(project: Project): String {
-      val prefix = "com.g985892345.provider."
-      var packageName = project.name
-      var p = project
-      while (p.parent != null) {
-        p = p.parent!!
-        packageName = "${p.name}.$packageName"
-      }
-      packageName = prefix + packageName.lowercase().replace(Regex("[^0-9a-zA-Z.]"), "")
-      return packageName
+    fun getClassPackage(projectPath: String): String {
+      val prefix = "com.g985892345.provider"
+      val pathPackageName = projectPath.replace(":", ".")
+      return prefix + pathPackageName.lowercase().replace(Regex("[^0-9a-zA-Z.]"), "")
     }
     
-    fun getClassNameSuffix(project: Project): String {
-      return project.name
+    fun getClassNameSuffix(projectName: String): String {
+      return projectName
         .split(Regex("[^0-9a-zA-Z]"))
         .joinToString("") { it.capitalized() }
     }
     
-    /**
-     * Obtain the qualified name of the automatically generated KtProviderInitializer implementation class.
-     */
-    fun getInitializerClass(project: Project): String {
-      return "${getPackageName(project)}." + getClassNameSuffix(project) + "KtProviderInitializer"
+    fun getKtProviderInitializerClass(projectPath: String, projectName: String): String {
+      val path = getClassPackage(projectPath)
+      val name = getClassNameSuffix(projectName)
+      return "$path.${name}KtProviderInitializer"
+    }
+    
+    fun getKtProviderRouterClass(projectPath: String, projectName: String): String {
+      val path = getClassPackage(projectPath)
+      val name = getClassNameSuffix(projectName)
+      return "$path.${name}KtProviderRouter"
     }
     
     private fun String.capitalized(): String {

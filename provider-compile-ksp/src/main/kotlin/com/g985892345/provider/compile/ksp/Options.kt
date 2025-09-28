@@ -21,7 +21,7 @@ class Options(
     initializerPackageName = options["ktProviderInitializerPackageName"]!!, // It assigned by the Gradle plugin
     initializerClassName = options["ktProviderInitializerClassName"]!!, // It assigned by the Gradle plugin
     logEnable = options["ktProviderLogEnable"]?.toBooleanStrictOrNull() ?: false,
-    dependModuleProjects = options["ktProviderDependModuleProjects"]?.split("&") ?: emptyList(),
+    dependModuleProjects = options["ktProviderDependModuleProjects"]?.split(" + ") ?: emptyList(),
     processMaxCount = options["ktProviderProcessMaxCount"]?.toInt() ?: 5,
   )
 }

@@ -1,6 +1,6 @@
 import com.IImplService
 import com.IKClassService
-import com.g985892345.provider.ktprovider.sample.kotlinjvm.module.ModuleKtProviderInitializer
+import com.g985892345.provider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProvider
 
 /**

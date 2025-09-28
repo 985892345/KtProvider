@@ -60,9 +60,16 @@ class KtProviderGradlePlugin : Plugin<Project> {
   }
   
   private fun transmitKsp(project: Project, ktProvider: KtProviderExtensions) {
-    val ktProviderRouterPackageName = KtProviderExtensions.getPackageName(project)
-    val ktProviderRouterClassName = "${KtProviderExtensions.getClassNameSuffix(project)}KtProviderRouter"
-    val selfInitializerClass = KtProviderExtensions.getInitializerClass(project)
+    val ktProviderRouterClass = KtProviderExtensions.getKtProviderRouterClass(
+      projectPath = project.path,
+      projectName = project.name
+    )
+    val ktProviderRouterPackageName = ktProviderRouterClass.substringBeforeLast(".")
+    val ktProviderRouterClassName = ktProviderRouterClass.substringAfterLast(".")
+    val selfInitializerClass = KtProviderExtensions.getKtProviderInitializerClass(
+      projectPath = project.path,
+      projectName = project.name
+    )
     val initializerPackageName = selfInitializerClass.substringBeforeLast(".")
     val initializerClassName = selfInitializerClass.substringAfterLast(".")
     project.extensions.configure(KspExtension::class.java) {
@@ -76,9 +83,8 @@ class KtProviderGradlePlugin : Plugin<Project> {
         project.extensions.configure(KspExtension::class.java) {
           it.arg(
             "ktProviderDependModuleProjects",
-            getDependModulePaths(project, ktProvider).joinToString("&") { dependProject ->
-              KtProviderExtensions.getInitializerClass(dependProject)
-            }
+            getDependProjectKtProviderInitializerClass(project, ktProvider)
+              .joinToString(" + ")
           )
         }
       }
@@ -90,15 +96,18 @@ class KtProviderGradlePlugin : Plugin<Project> {
   }
   
   // Retrieve the paths of all dependent modules.
-  private fun getDependModulePaths(project: Project, ktProvider: KtProviderExtensions): List<Project> {
-    val dependProjects = mutableListOf<Project>()
-    ktProvider.configurations.mapNotNull {
-      project.configurations.findByName(it)
-    }.forEach { config ->
-      config.dependencies.forEach { dependency ->
-        if (dependency is ProjectDependency) {
-          val dependProject = dependency.dependencyProject
-          dependProjects.add(dependProject)
+  private fun getDependProjectKtProviderInitializerClass(project: Project, ktProvider: KtProviderExtensions): List<String> {
+    val dependProjects = mutableListOf<String>()
+    project.configurations.configureEach { config ->
+      if (config.name.matches(ktProvider.configurations)) {
+        config.dependencies.forEach { dependency ->
+          if (dependency is ProjectDependency) {
+            val classPackageName = KtProviderExtensions.getKtProviderInitializerClass(
+              projectPath = dependency.path,
+              projectName = dependency.name
+            )
+            dependProjects.add(classPackageName)
+          }
         }
       }
     }

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.IHelloWorldService
 import com.g985892345.provider.manager.KtProvider
 import commonMain
@@ -18,7 +19,14 @@ import commonMain
 class MainActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    commonMain()
+    runCatching {
+      commonMain()
+    }.onFailure {
+      Toast.makeText(this, "KtProvider init failed", Toast.LENGTH_LONG).show()
+      it.printStackTrace()
+    }.onSuccess {
+      Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show()
+    }
     setContentView(
       TextView(this).apply {
         layoutParams = FrameLayout.LayoutParams(

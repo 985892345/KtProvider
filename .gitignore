@@ -17,6 +17,7 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 
 ### IntelliJ IDEA ###
+.idea
 .idea/artifacts
 .idea/modules.xml
 .idea/jarRepositories.xml

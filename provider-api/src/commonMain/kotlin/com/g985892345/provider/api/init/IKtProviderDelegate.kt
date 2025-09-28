@@ -53,7 +53,10 @@ interface IKtProviderDelegate {
       if (oldWrapper != null) {
         val clazzInfo = if (clazz != Nothing::class) "clazz=${clazz}" else ""
         val nameInfo = if (name.isNotEmpty()) ", name=${name}" else ""
-        throw IllegalStateException("Duplicate @ImplProvider annotation found: $clazzInfo$nameInfo")
+        val oldNameInfo = if (oldWrapper.name.isNotEmpty()) ", oldName=${oldWrapper.name}" else ""
+        throw IllegalStateException("Duplicate @ImplProvider annotation found: "
+            + "($clazzInfo$nameInfo), "
+            + "($clazzInfo$oldNameInfo)")
       }
     }
     
@@ -63,7 +66,10 @@ interface IKtProviderDelegate {
       if (oldWrapper != null) {
         val clazzInfo = if (clazz != Nothing::class) "clazz=${clazz}" else ""
         val nameInfo = if (name.isNotEmpty()) ", name=${name}" else ""
-        throw IllegalStateException("Duplicate @KClassProvider annotation found: $clazzInfo$nameInfo")
+        val oldNameInfo = if (oldWrapper.name.isNotEmpty()) ", oldName=${oldWrapper.name}" else ""
+        throw IllegalStateException("Duplicate @KClassProvider annotation found: "
+            + "($clazzInfo$nameInfo), "
+            + "($clazzInfo$oldNameInfo)")
       }
     }
   }
