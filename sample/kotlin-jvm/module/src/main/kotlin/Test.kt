@@ -1,6 +1,7 @@
+import com.IGenericsService
 import com.IImplService
 import com.IKClassService
-import com.g985892345.provider.sample.kotlinjvm.module.ModuleKtProviderInitializer
+import com.g985892345.provider.ktprovider.sample.kotlinjvm.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProvider
 
 /**
@@ -35,6 +36,11 @@ fun main() {
     ).all {
       it === defaultKClassImplServiceImpl
     }
+  }
+
+  judge {
+    val genericsServiceImpl = KtProvider.impl(IGenericsService::class)
+    genericsServiceImpl.get()
   }
   println(KtProvider.impl(IImplService::class, name = "test").get())
 }

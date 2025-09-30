@@ -1,7 +1,7 @@
 package com.ktprovider.sample.module
 
 import android.app.Application
-import com.g985892345.provider.sample.kotlinmultiplatform.module.ModuleKtProviderInitializer
+import com.g985892345.provider.ktprovider.sample.kotlinmultiplatform.module.ModuleKtProviderInitializer
 
 /**
  * .
