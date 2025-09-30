@@ -61,12 +61,14 @@ class KtProviderGradlePlugin : Plugin<Project> {
   
   private fun transmitKsp(project: Project, ktProvider: KtProviderExtensions) {
     val ktProviderRouterClass = KtProviderExtensions.getKtProviderRouterClass(
+      rootProject = project.rootProject,
       projectPath = project.path,
       projectName = project.name
     )
     val ktProviderRouterPackageName = ktProviderRouterClass.substringBeforeLast(".")
     val ktProviderRouterClassName = ktProviderRouterClass.substringAfterLast(".")
     val selfInitializerClass = KtProviderExtensions.getKtProviderInitializerClass(
+      rootProject = project.rootProject,
       projectPath = project.path,
       projectName = project.name
     )
@@ -103,6 +105,7 @@ class KtProviderGradlePlugin : Plugin<Project> {
         config.dependencies.forEach { dependency ->
           if (dependency is ProjectDependency) {
             val classPackageName = KtProviderExtensions.getKtProviderInitializerClass(
+              rootProject = project.rootProject,
               projectPath = dependency.path,
               projectName = dependency.name
             )

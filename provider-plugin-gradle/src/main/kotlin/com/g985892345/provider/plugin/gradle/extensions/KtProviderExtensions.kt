@@ -59,8 +59,9 @@ abstract class KtProviderExtensions(private val project: Project) {
   
   companion object {
     
-    fun getClassPackage(projectPath: String): String {
-      val prefix = "com.g985892345.provider"
+    fun getClassPackage(rootProject: Project, projectPath: String): String {
+      val root = rootProject.name.lowercase().replace(Regex("[^0-9a-zA-Z.]"), "")
+      val prefix = "com.g985892345.provider.$root"
       val pathPackageName = projectPath.replace(":", ".")
       return prefix + pathPackageName.lowercase().replace(Regex("[^0-9a-zA-Z.]"), "")
     }
@@ -71,14 +72,22 @@ abstract class KtProviderExtensions(private val project: Project) {
         .joinToString("") { it.capitalized() }
     }
     
-    fun getKtProviderInitializerClass(projectPath: String, projectName: String): String {
-      val path = getClassPackage(projectPath)
+    fun getKtProviderInitializerClass(
+      rootProject: Project,
+      projectPath: String,
+      projectName: String
+    ): String {
+      val path = getClassPackage(rootProject, projectPath)
       val name = getClassNameSuffix(projectName)
       return "$path.${name}KtProviderInitializer"
     }
     
-    fun getKtProviderRouterClass(projectPath: String, projectName: String): String {
-      val path = getClassPackage(projectPath)
+    fun getKtProviderRouterClass(
+      rootProject: Project,
+      projectPath: String,
+      projectName: String
+    ): String {
+      val path = getClassPackage(rootProject, projectPath)
       val name = getClassNameSuffix(projectName)
       return "$path.${name}KtProviderRouter"
     }
