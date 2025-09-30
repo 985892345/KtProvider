@@ -205,30 +205,31 @@ class KtProviderSymbolProcess(
     override fun addStatement(builder: FunSpec.Builder) {
       declaration.getAnnotationsByType(ImplProvider::class)
         .forEach {
-          val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
-          log("@ImplProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = ${it.name}")
+          val name = try { it.name } catch (e: NoSuchElementException) { "" }
+          val clazzClassName = getClazzTypeName(declaration, name) { it.clazz }
+          log("@ImplProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = $name")
           if (clazzClassName != null) {
             if (declaration.classKind == ClassKind.OBJECT) {
               builder.addStatement(
                 "delegate.addImplProvider(%T::class, %S) { %T }",
-                clazzClassName, it.name, declaration.toClassName()
+                clazzClassName, name, declaration.toClassName()
               )
             } else {
               builder.addStatement(
                 "delegate.addImplProvider(%T::class, %S) { %T() }",
-                clazzClassName, it.name, declaration.toClassName()
+                clazzClassName, name, declaration.toClassName()
               )
             }
           } else {
             if (declaration.classKind == ClassKind.OBJECT) {
               builder.addStatement(
                 "delegate.addImplProvider(null, %S) { %T }",
-                it.name, declaration.toClassName()
+                name, declaration.toClassName()
               )
             } else {
               builder.addStatement(
                 "delegate.addImplProvider(null, %S) { %T() }",
-                it.name, declaration.toClassName()
+                name, declaration.toClassName()
               )
             }
           }
@@ -246,17 +247,18 @@ class KtProviderSymbolProcess(
     override fun addStatement(builder: FunSpec.Builder) {
       declaration.getAnnotationsByType(KClassProvider::class)
         .forEach {
-          val clazzClassName = getClazzTypeName(declaration, it.name) { it.clazz }
-          log("@KClassProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = ${it.name}")
+          val name = try { it.name } catch (e: NoSuchElementException) { "" }
+          val clazzClassName = getClazzTypeName(declaration, name) { it.clazz }
+          log("@KClassProvider: declaration = ${declaration.toClassName()}, clazz = $clazzClassName, name = $name")
           if (clazzClassName != null) {
             builder.addStatement(
               "delegate.addKClassProvider(%T::class, %S) { %T::class }",
-              clazzClassName, it.name, declaration.toClassName()
+              clazzClassName, name, declaration.toClassName()
             )
           } else {
             builder.addStatement(
               "delegate.addKClassProvider(null, %S) { %T::class }",
-              it.name, declaration.toClassName()
+              name, declaration.toClassName()
             )
           }
         }
