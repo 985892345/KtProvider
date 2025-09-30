@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="provider-init-js">
-    <output-path>$PROJECT_DIR$/provider-init/build/libs</output-path>
-    <root id="archive" name="provider-init-js.jar">
-      <element id="module-output" name="KtProvider.provider-init.jsMain" />
-    </root>
-  </artifact>
-</component>

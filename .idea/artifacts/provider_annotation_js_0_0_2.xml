@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="provider-annotation-js-0.0.2">
-    <output-path>$PROJECT_DIR$/provider-annotation/build/libs</output-path>
-    <root id="archive" name="provider-annotation-js-0.0.2.jar">
-      <element id="module-output" name="KtProvider.provider-annotation.jsMain" />
-    </root>
-  </artifact>
-</component>

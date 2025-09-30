@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="provider-api-js">
-    <output-path>$PROJECT_DIR$/provider-api/build/libs</output-path>
-    <root id="archive" name="provider-api-js.jar">
-      <element id="module-output" name="KtProvider.provider-api.jsMain" />
-    </root>
-  </artifact>
-</component>
