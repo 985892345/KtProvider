@@ -31,6 +31,9 @@ kotlin {
         implementation(projects.providerApi)
       }
     }
+    commonTest.dependencies {
+      implementation(kotlin("test"))
+    }
   }
 }
 

@@ -8,6 +8,7 @@ dependencies {
   compileOnly(libs.ksp.api)
   // https://square.github.io/kotlinpoet/
   implementation(libs.kotlinpoet)
+  testImplementation(kotlin("test"))
 }
 
 publisher {

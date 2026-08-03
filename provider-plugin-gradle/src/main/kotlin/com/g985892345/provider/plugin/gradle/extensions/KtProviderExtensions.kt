@@ -16,22 +16,31 @@ abstract class KtProviderExtensions(private val project: Project) {
    * Plugin version.
    */
   val version = BuildConfig.VERSION
+
+  /**
+   * Whether KtProvider dependencies should resolve to projects in the current source build.
+   * Published coordinates remain the default for regular plugin consumers.
+   */
+  var useLocalDependencies = false
   
   /**
    * KSP dependency for the corresponding version.
    */
-  val ksp = "${BuildConfig.GROUP}:provider-compile-ksp:${version}"
+  val ksp: Any
+    get() = dependency("provider-compile-ksp", ":provider-compile-ksp")
   
   /**
    * provider-api dependency for the corresponding version.
    * It is already included by default when importing the plugin, so there is no need to add it again.
    */
-  val api = "${BuildConfig.GROUP}:provider-api:${version}"
+  val api: Any
+    get() = apiDependency("provider-api")
   
   /**
    * provider-manager dependency for the corresponding version.
    */
-  val manager = "${BuildConfig.GROUP}:provider-manager:${version}"
+  val manager: Any
+    get() = dependency("provider-manager", ":provider-manager")
   
   /**
    * dependent configuration
@@ -55,6 +64,18 @@ abstract class KtProviderExtensions(private val project: Project) {
     project.extensions.configure(KspExtension::class.java) {
       it.arg("ktProviderProcessMaxCount", processMaxCount.toString())
     }
+  }
+
+  internal fun apiDependency(artifactId: String): Any {
+    return dependency(artifactId, ":provider-api")
+  }
+
+  private fun dependency(artifactId: String, localProjectPath: String): Any {
+    if (!useLocalDependencies) {
+      return "${BuildConfig.GROUP}:$artifactId:$version"
+    }
+    return project.rootProject.findProject(localProjectPath)
+      ?: error("Local KtProvider dependency project not found: $localProjectPath")
   }
   
   companion object {

@@ -7,13 +7,16 @@ plugins {
 group = "org.example"
 version = "unspecified"
 
+ktProvider {
+  useLocalDependencies = true
+}
+
 dependencies {
   implementation(kotlin("reflect"))
   
   implementation(projects.sample.kotlinJvm.api)
   implementation(projects.sample.kotlinJvm.impl)
   
-  implementation(projects.providerManager)
-  implementation(projects.providerApi)
-  ksp(projects.providerCompileKsp)
+  implementation(ktProvider.manager)
+  ksp(ktProvider.ksp)
 }

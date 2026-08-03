@@ -35,13 +35,16 @@ class KtProviderGradlePlugin : Plugin<Project> {
    * `org.jetbrains.kotlin.android`, so both Android application and library plugins must be observed.
    */
   private fun configDependencies(project: Project, ktProvider: KtProviderExtensions) {
+    fun apiDependency(artifactId: String) = project.providers.provider<Any> {
+      ktProvider.apiDependency(artifactId)
+    }
     project.plugins.withId("org.jetbrains.kotlin.multiplatform") {
       project.extensions
         .getByType(KotlinSourceSetContainer::class.java)
         .sourceSets
         .named("commonMain") {
           it.dependencies {
-            implementation(ktProvider.api)
+            implementation(apiDependency("provider-api"))
           }
         }
     }
@@ -53,7 +56,7 @@ class KtProviderGradlePlugin : Plugin<Project> {
     ) {
       project.dependencies.add(
         "implementation",
-        ktProvider.api.replace("provider-api", "provider-api-jvm")
+        apiDependency("provider-api-jvm")
       )
     }
     project.plugins.withAnyId(
@@ -62,7 +65,7 @@ class KtProviderGradlePlugin : Plugin<Project> {
     ) {
       project.dependencies.add(
         "implementation",
-        ktProvider.api.replace("provider-api", "provider-api-js")
+        apiDependency("provider-api-js")
       )
     }
   }

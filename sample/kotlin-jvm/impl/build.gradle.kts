@@ -7,10 +7,12 @@ plugins {
 group = "org.example"
 version = "unspecified"
 
-ktProvider.setLogEnable(true)
+ktProvider {
+  useLocalDependencies = true
+  setLogEnable(true)
+}
 
 dependencies {
   implementation(projects.sample.kotlinJvm.api)
-  implementation(projects.providerApi)
-  ksp(projects.providerCompileKsp)
+  ksp(ktProvider.ksp)
 }

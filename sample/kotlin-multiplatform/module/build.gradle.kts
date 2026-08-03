@@ -9,6 +9,7 @@ plugins {
 }
 
 ktProvider {
+  useLocalDependencies = true
   setLogEnable(true)
 }
 
@@ -47,18 +48,20 @@ kotlin {
     commonMain.dependencies {
       implementation(projects.sample.kotlinMultiplatform.api)
       implementation(projects.sample.kotlinMultiplatform.impl)
-      implementation(projects.providerApi)
-      implementation(projects.providerManager)
+      implementation(ktProvider.manager)
+    }
+    commonTest.dependencies {
+      implementation(kotlin("test"))
     }
   }
 }
 
 dependencies {
-  add("kspCommonMainMetadata", projects.providerCompileKsp)
-  add("kspAndroid", projects.providerCompileKsp)
-  add("kspJvm", projects.providerCompileKsp)
-  add("kspIosX64", projects.providerCompileKsp)
-  add("kspIosArm64", projects.providerCompileKsp)
-  add("kspIosSimulatorArm64", projects.providerCompileKsp)
-  add("kspWasmJs", projects.providerCompileKsp)
+  add("kspCommonMainMetadata", ktProvider.ksp)
+  add("kspAndroid", ktProvider.ksp)
+  add("kspJvm", ktProvider.ksp)
+  add("kspIosX64", ktProvider.ksp)
+  add("kspIosArm64", ktProvider.ksp)
+  add("kspIosSimulatorArm64", ktProvider.ksp)
+  add("kspWasmJs", ktProvider.ksp)
 }
