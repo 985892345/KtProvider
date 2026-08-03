@@ -57,6 +57,20 @@ class KtProviderInitializerTest {
     assertEquals(listOf("module:before", "module:router"), events)
   }
 
+  @Test
+  fun initializationTrackersCanLoadTheSameInitializerIndependently() {
+    val events = mutableListOf<String>()
+    val initializer = RecordingInitializer("module", events)
+    val firstDelegate = TrackingDelegate()
+    val secondDelegate = TrackingDelegate()
+
+    initializer.tryInitKtProvider(firstDelegate)
+    initializer.tryInitKtProvider(firstDelegate)
+    initializer.tryInitKtProvider(secondDelegate)
+
+    assertEquals(listOf("module:router", "module:router"), events)
+  }
+
   private val KtProviderInitializer.name: String
     get() = (this as RecordingInitializer).name
 
@@ -70,6 +84,16 @@ class KtProviderInitializerTest {
       override fun initRouter(delegate: IKtProviderDelegate) {
         events += "${name}:router"
       }
+    }
+  }
+
+  private class TrackingDelegate : IKtProviderDelegate, IKtProviderInitializationTracker {
+    private val initializers = mutableListOf<KtProviderInitializer>()
+
+    override fun markKtProviderInitialized(initializer: KtProviderInitializer): Boolean {
+      if (initializers.any { it === initializer }) return false
+      initializers += initializer
+      return true
     }
   }
 }

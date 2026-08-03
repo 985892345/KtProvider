@@ -37,7 +37,7 @@ interface IKtProviderDelegate {
    */
   fun <T : Any> addKClassProvider(clazz: KClass<T>?, name: String, init: () -> KClass<out T>) {}
   
-  companion object : IKtProviderDelegate {
+  companion object : IKtProviderDelegate, IKtProviderResolver {
     
     // All added route information.
     private val ImplProviderMapInternal = LinkedHashMap<KClass<*>?, LinkedHashMap<String, ImplProviderWrapper<*>>>()
@@ -46,6 +46,12 @@ interface IKtProviderDelegate {
       get() = ImplProviderMapInternal
     val KClassProviderMap: Map<KClass<*>?, Map<String, KClassProviderWrapper<*>>>
       get() = KClassProviderMapInternal
+
+    override val implProviders: Map<KClass<*>?, Map<String, ImplProviderWrapper<*>>>
+      get() = ImplProviderMap
+
+    override val kClassProviders: Map<KClass<*>?, Map<String, KClassProviderWrapper<*>>>
+      get() = KClassProviderMap
     
     override fun <T : Any> addImplProvider(clazz: KClass<T>?, name: String, init: () -> T) {
       val wrapper = ImplProviderWrapper(name, clazz, init)

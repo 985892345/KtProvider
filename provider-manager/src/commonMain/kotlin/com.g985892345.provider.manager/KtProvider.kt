@@ -1,6 +1,7 @@
 package com.g985892345.provider.manager
 
 import com.g985892345.provider.api.init.IKtProviderDelegate
+import com.g985892345.provider.api.init.IKtProviderResolver
 import com.g985892345.provider.api.init.wrapper.ImplProviderWrapper
 import com.g985892345.provider.api.init.wrapper.KClassProviderWrapper
 import kotlin.reflect.KClass
@@ -12,6 +13,25 @@ import kotlin.reflect.KClass
  * 2024/12/19 23:17
  */
 object KtProvider {
+
+  private var activeResolver: IKtProviderResolver = IKtProviderDelegate
+
+  /**
+   * Runs [block] with provider lookups redirected to [resolver].
+   *
+   * The previous resolver is restored even when [block] fails. The block must remain synchronous,
+   * and resolver scopes must not overlap.
+   */
+  @KtProviderTestingApi
+  fun <R> withResolver(resolver: IKtProviderResolver, block: () -> R): R {
+    val previousResolver = activeResolver
+    activeResolver = resolver
+    return try {
+      block()
+    } finally {
+      activeResolver = previousResolver
+    }
+  }
   
   /**
    * Return the implementation class that is only set with the corresponding [name].
@@ -42,7 +62,7 @@ object KtProvider {
    */
   @Suppress("UNCHECKED_CAST")
   fun <T : Any> allImpl(clazz: KClass<out T>?): Map<String, ImplProviderWrapper<T>> {
-    return IKtProviderDelegate.ImplProviderMap[clazz ?: Nothing::class]
+    return activeResolver.implProviders[clazz ?: Nothing::class]
       ?.mapValues { it.value as ImplProviderWrapper<T> }
       ?: emptyMap()
   }
@@ -77,7 +97,7 @@ object KtProvider {
    */
   @Suppress("UNCHECKED_CAST")
   fun <T : Any> allClazz(clazz: KClass<out T>?): Map<String, KClassProviderWrapper<T>> {
-    return IKtProviderDelegate.KClassProviderMap[clazz ?: Nothing::class]
+    return activeResolver.kClassProviders[clazz ?: Nothing::class]
       ?.mapValues { it.value as KClassProviderWrapper<T> }
       ?: emptyMap()
   }
@@ -90,7 +110,7 @@ object KtProvider {
     if (clazz == null && name.isEmpty()) {
       throw IllegalArgumentException("Either [clazz] or [name] must be included!")
     }
-    return IKtProviderDelegate.ImplProviderMap[clazz]?.get(name)?.get() as T?
+    return activeResolver.implProviders[clazz]?.get(name)?.get() as T?
   }
   
   @Suppress("UNCHECKED_CAST")
@@ -101,6 +121,6 @@ object KtProvider {
     if (clazz == null && name.isEmpty()) {
       throw IllegalArgumentException("Either [clazz] or [name] must be included!")
     }
-    return IKtProviderDelegate.KClassProviderMap[clazz]?.get(name)?.get() as KClass<out T>?
+    return activeResolver.kClassProviders[clazz]?.get(name)?.get() as KClass<out T>?
   }
 }

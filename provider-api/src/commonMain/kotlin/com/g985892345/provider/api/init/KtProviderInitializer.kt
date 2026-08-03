@@ -56,8 +56,12 @@ abstract class KtProviderInitializer {
   }
   
   fun tryInitKtProvider(delegate: IKtProviderDelegate) {
-    if (mHasInit) return
-    mHasInit = true
+    if (delegate is IKtProviderInitializationTracker) {
+      if (!delegate.markKtProviderInitialized(this)) return
+    } else {
+      if (mHasInit) return
+      mHasInit = true
+    }
     initKtProvider(delegate)
   }
   

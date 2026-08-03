@@ -127,6 +127,82 @@ val service = KtProvider.implOrNull(ITestService::class, "test")
 println(service.get())
 ```
 
+## 测试
+
+在测试源集中引入 `provider-testing`。主源码集仍需按照[配置](#配置)章节引入
+`provider-manager`。
+
+<details open>
+<summary>Kotlin Multiplatform 项目</summary>
+
+```kotlin
+kotlin {
+  sourceSets {
+    commonTest.dependencies {
+      implementation(kotlin("test"))
+      implementation(ktProvider.testing)
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary>JVM 或 Android 项目</summary>
+
+```kotlin
+dependencies {
+  testImplementation(ktProvider.testing)
+}
+```
+</details>
+
+测试时传入被测模块生成的 Initializer。`withKtProviderTest` 会创建独立 Registry，加载当前模块
+以及生成 Initializer 中记录的 KtProvider 工程模块依赖，在代码块执行期间重定向 `KtProvider`
+查询，并在代码块正常返回或抛出异常后恢复生产 Resolver。
+
+```kotlin
+import com.g985892345.provider.testing.withKtProviderTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+private object FakeTestService : ITestService {
+  override fun get(): String = "fake"
+}
+
+class ServiceConsumerTest {
+
+  @Test
+  fun usesTheTestProvider() = withKtProviderTest(ModuleKtProviderInitializer) {
+    overrideImpl<ITestService>(name = "test") {
+      FakeTestService
+    }
+
+    assertEquals(
+      "fake",
+      KtProvider.impl(ITestService::class, "test").get(),
+    )
+  }
+}
+```
+
+也可以使用相同方式替换实现类路由：
+
+```kotlin
+withKtProviderTest(ModuleKtProviderInitializer) {
+  overrideKClass<ITestService>(name = "test") {
+    FakeTestService::class
+  }
+}
+```
+
+`ModuleKtProviderInitializer` 由主源码集的 KSP 任务生成。执行测试任务时会先执行所需的主源码
+编译和 KSP 生成。如果第一次编写测试时该引用暂未解析，执行一次 Gradle sync 或测试任务即可。
+
+每次调用 `withKtProviderTest` 都会创建新的 Registry，因此覆盖不会修改生产注册，也不会泄漏到
+后续串行测试。代码块必须同步执行，并且 Resolver 作用域不能重叠；不要在同一个测试进程中并发
+执行多个 `withKtProviderTest` 代码块。
+
 ## 实现原理
 1. KtProvider 的 gradle 插件会自动解析模块之间的依赖关系并传递给 KSP 生成 `KtProviderInitializer` 的实现类
 2. KSP 扫描注解生成 `KtProviderRouter` 的实现类

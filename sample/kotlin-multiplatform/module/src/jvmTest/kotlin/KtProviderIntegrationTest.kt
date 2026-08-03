@@ -3,6 +3,7 @@ import com.IImplService
 import com.IKClassService
 import com.g985892345.provider.ktprovider.sample.kotlinmultiplatform.module.ModuleKtProviderInitializer
 import com.g985892345.provider.manager.KtProvider
+import com.g985892345.provider.testing.withKtProviderTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -65,5 +66,24 @@ class KtProviderIntegrationTest {
 
     assertTrue(implementationNames.containsAll(listOf("", "class1", "class2", "object1", "object2")))
     assertTrue(classNames.containsAll(listOf("", "KClass1", "KClass2")))
+  }
+
+  @Test
+  fun testScopeLoadsDependenciesAndRestoresProductionProviders() {
+    val fakeService = object : IHelloWorldService {
+      override fun get() = "Fake hello!"
+    }
+
+    withKtProviderTest(ModuleKtProviderInitializer) {
+      overrideImpl<IHelloWorldService> { fakeService }
+
+      assertSame(fakeService, KtProvider.impl(IHelloWorldService::class))
+      assertTrue(KtProvider.allImpl(IImplService::class).isNotEmpty())
+    }
+
+    assertEquals(
+      "Hello world!",
+      KtProvider.impl(IHelloWorldService::class).get(),
+    )
   }
 }

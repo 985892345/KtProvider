@@ -13,6 +13,7 @@ rootProject.name = "KtProvider"
 include("provider-compile-ksp")
 include("provider-manager")
 include("provider-api")
+include("provider-testing")
 include("sample:kotlin-jvm:api")
 include("sample:kotlin-jvm:impl")
 include("sample:kotlin-jvm:module")

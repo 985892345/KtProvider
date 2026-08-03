@@ -112,7 +112,7 @@ class KtProviderGradlePlugin : Plugin<Project> {
   private fun getDependProjectKtProviderInitializerClass(project: Project, ktProvider: KtProviderExtensions): List<String> {
     val dependProjects = mutableListOf<String>()
     project.configurations.configureEach { config ->
-      if (config.name.matches(ktProvider.configurations)) {
+      if (config.name.matches(ktProvider.configurations) && !config.name.isTestConfiguration()) {
         config.dependencies.forEach { dependency ->
           if (dependency is ProjectDependency) {
             val classPackageName = KtProviderExtensions.getKtProviderInitializerClass(
@@ -126,5 +126,9 @@ class KtProviderGradlePlugin : Plugin<Project> {
       }
     }
     return dependProjects
+  }
+
+  private fun String.isTestConfiguration(): Boolean {
+    return startsWith("test", ignoreCase = true) || contains("Test")
   }
 }

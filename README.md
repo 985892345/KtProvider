@@ -132,6 +132,84 @@ val service = KtProvider.implOrNull(ITestService::class, "test")
 println(service.get())
 ```
 
+## Testing
+
+Add `provider-testing` to the test source set. The main source set still needs
+`provider-manager` as shown in [Setup](#setup).
+
+<details open>
+<summary>Kotlin Multiplatform projects</summary>
+
+```kotlin
+kotlin {
+  sourceSets {
+    commonTest.dependencies {
+      implementation(kotlin("test"))
+      implementation(ktProvider.testing)
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary>JVM or Android projects</summary>
+
+```kotlin
+dependencies {
+  testImplementation(ktProvider.testing)
+}
+```
+</details>
+
+Use the initializer generated for the module under test. `withKtProviderTest` creates an isolated
+registry, loads the module and the KtProvider project-module dependencies recorded in its generated
+initializer, redirects `KtProvider` lookups for the block, and restores the production resolver when
+the block returns or throws.
+
+```kotlin
+import com.g985892345.provider.testing.withKtProviderTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+private object FakeTestService : ITestService {
+  override fun get(): String = "fake"
+}
+
+class ServiceConsumerTest {
+
+  @Test
+  fun usesTheTestProvider() = withKtProviderTest(ModuleKtProviderInitializer) {
+    overrideImpl<ITestService>(name = "test") {
+      FakeTestService
+    }
+
+    assertEquals(
+      "fake",
+      KtProvider.impl(ITestService::class, "test").get(),
+    )
+  }
+}
+```
+
+Implementation-class routes can be replaced in the same way:
+
+```kotlin
+withKtProviderTest(ModuleKtProviderInitializer) {
+  overrideKClass<ITestService>(name = "test") {
+    FakeTestService::class
+  }
+}
+```
+
+The generated `ModuleKtProviderInitializer` is produced by the main KSP task. Running the test task
+also runs the required main compilation and KSP generation. If the reference is unresolved immediately
+after writing the first test, run Gradle sync or the test task once.
+
+Each `withKtProviderTest` call owns a fresh registry, so overrides do not mutate production registrations
+or leak into later sequential tests. The block is synchronous and resolver scopes must not overlap; do not
+run multiple `withKtProviderTest` blocks concurrently in the same test process.
+
 ## Implementation principle
 1. The KtProvider's Gradle plugin automatically resolves the inter-module dependencies and passes this information to KSP to generate an implementation class for KtProviderInitializer. 
 2. KSP scans annotations to generate an implementation class for KtProviderRouter.

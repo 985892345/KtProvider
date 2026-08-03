@@ -52,6 +52,7 @@ kotlin {
     }
     commonTest.dependencies {
       implementation(kotlin("test"))
+      implementation(ktProvider.testing)
     }
   }
 }

@@ -41,6 +41,12 @@ abstract class KtProviderExtensions(private val project: Project) {
    */
   val manager: Any
     get() = dependency("provider-manager", ":provider-manager")
+
+  /**
+   * provider-testing dependency for the corresponding version.
+   */
+  val testing: Any
+    get() = dependency("provider-testing", ":provider-testing")
   
   /**
    * dependent configuration
