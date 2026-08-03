@@ -19,4 +19,4 @@ include("sample:kotlin-jvm:module")
 include("sample:kotlin-multiplatform:api")
 include("sample:kotlin-multiplatform:impl")
 include("sample:kotlin-multiplatform:module")
-
+include("sample:kotlin-multiplatform:androidApp")

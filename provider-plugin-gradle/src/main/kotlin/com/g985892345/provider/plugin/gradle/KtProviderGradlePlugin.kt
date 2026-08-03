@@ -28,6 +28,12 @@ class KtProviderGradlePlugin : Plugin<Project> {
     transmitKsp(project, ktProvider)
   }
   
+  /**
+   * Injects the KtProvider API according to the target module type.
+   *
+   * AGP 9 provides built-in Kotlin support and no longer requires
+   * `org.jetbrains.kotlin.android`, so both Android application and library plugins must be observed.
+   */
   private fun configDependencies(project: Project, ktProvider: KtProviderExtensions) {
     project.plugins.withId("org.jetbrains.kotlin.multiplatform") {
       project.extensions
@@ -41,6 +47,8 @@ class KtProviderGradlePlugin : Plugin<Project> {
     }
     project.plugins.withAnyId(
       "org.jetbrains.kotlin.android",
+      "com.android.application",
+      "com.android.library",
       "org.jetbrains.kotlin.jvm",
     ) {
       project.dependencies.add(

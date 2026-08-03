@@ -8,13 +8,9 @@ import android.widget.TextView
 import android.widget.Toast
 import com.IHelloWorldService
 import com.g985892345.provider.manager.KtProvider
-import commonMain
 
 /**
- * .
- *
- * @author 985892345
- * 2024/1/14 15:04
+ * Verifies that the standalone Android app can consume the shared KMP module and generated code.
  */
 class MainActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {

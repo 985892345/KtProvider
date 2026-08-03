@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  alias(libs.plugins.android.library)
+  alias(libs.plugins.android.kotlin.multiplatform.library)
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.ksp)
   id("io.github.985892345.KtProvider")
@@ -13,7 +13,10 @@ kotlin {
   iosX64()
   iosArm64()
   iosSimulatorArm64()
-  androidTarget {
+  android {
+    namespace = "com.ktprovider.sample.impl"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    minSdk = libs.versions.android.minSdk.get().toInt()
     compilerOptions {
       jvmTarget.set(JvmTarget.JVM_1_8)
     }
@@ -39,12 +42,4 @@ dependencies {
   add("kspIosArm64", projects.providerCompileKsp)
   add("kspIosSimulatorArm64", projects.providerCompileKsp)
   add("kspWasmJs", projects.providerCompileKsp)
-}
-
-android {
-  namespace = "com.ktprovider.sample.impl"
-  compileSdk = libs.versions.android.compileSdk.get().toInt()
-  defaultConfig {
-    minSdk = libs.versions.android.minSdk.get().toInt()
-  }
 }
